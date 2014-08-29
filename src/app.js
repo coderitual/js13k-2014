@@ -104,11 +104,16 @@ ED.GDM.prototype.boot = function() {
 ED.Input = function(game) {
     this.game = game;
     this.keyboard = null;
+    this.mouse = null;
 };
 
 ED.Input.prototype.boot = function() {
+
     this.keyboard = new ED.Keyboard(this.game);
+    this.mouse = new ED.Mouse(this.game);
+
     this.keyboard.start();
+    this.mouse.start();
 };
 
 /**
