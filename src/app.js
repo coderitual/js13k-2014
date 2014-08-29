@@ -5,10 +5,10 @@
  */
 
 /**
- * OKED Library
+ * El Duel Library
  */
 
-var OKED = {};
+var ED = {};
 
 /**
  * RequestAnimationFrame helper service
@@ -16,7 +16,7 @@ var OKED = {};
  * @constructor
  */
 
-OKED.RAF = function(game) {
+ED.RAF = function(game) {
     this.game = game;
     this.timeStep = 1/60;
 
@@ -34,7 +34,7 @@ OKED.RAF = function(game) {
     })();
 };
 
-OKED.RAF.prototype.start = function() {
+ED.RAF.prototype.start = function() {
     var self = this;
 
     this._onRAF = function() {
@@ -47,7 +47,7 @@ OKED.RAF.prototype.start = function() {
     this.update();
 };
 
-OKED.RAF.prototype.update = function() {
+ED.RAF.prototype.update = function() {
     if(!this.game.isRunning) {
         return;
     }
@@ -73,11 +73,11 @@ OKED.RAF.prototype.update = function() {
  * @param game
  * @constructor
  */
-OKED.GDM = function(game) {
+ED.GDM = function(game) {
     this.game = game;
 };
 
-OKED.GDM.prototype.boot = function() {
+ED.GDM.prototype.boot = function() {
 
     this.gl = null;
     var canvas = this.game.canvas;
@@ -101,11 +101,11 @@ OKED.GDM.prototype.boot = function() {
  * @constructor
  */
 
-OKED.Input = function(game) {
+ED.Input = function(game) {
     this.game = game;
 };
 
-OKED.Input.prototype.boot = function() {
+ED.Input.prototype.boot = function() {
 
 };
 
@@ -114,7 +114,7 @@ OKED.Input.prototype.boot = function() {
  * @param game
  * @constructor
  */
-OKED.StateManager = function(game) {
+ED.StateManager = function(game) {
     this.game = game;
     this.states = {};
     this.current = '';
@@ -123,12 +123,12 @@ OKED.StateManager = function(game) {
     this._state = null;
 };
 
-OKED.StateManager.prototype.add = function(key, state) {
+ED.StateManager.prototype.add = function(key, state) {
     this.states[key] = state;
     this.states[key].game = this.game;
 };
 
-OKED.StateManager.prototype.set = function(key) {
+ED.StateManager.prototype.set = function(key) {
     var state = this.states[key],
         methods = ['update', 'render', 'load', 'unload'],
         valid = false;
@@ -148,7 +148,7 @@ OKED.StateManager.prototype.set = function(key) {
     this._pending = key;
 };
 
-OKED.StateManager.prototype.update = function() {
+ED.StateManager.prototype.update = function() {
 
     if(this._pending) {
 
@@ -164,7 +164,7 @@ OKED.StateManager.prototype.update = function() {
     }
 };
 
-OKED.StateManager.prototype.render = function() {
+ED.StateManager.prototype.render = function() {
 
     if(this._state) {
         this._state.render();
@@ -178,7 +178,7 @@ OKED.StateManager.prototype.render = function() {
  * @param parentId
  * @constructor
  */
-OKED.Game = function(width, height, parentId) {
+ED.Game = function(width, height, parentId) {
     this.isRunning = false;
 
     this.width = width;
@@ -191,7 +191,7 @@ OKED.Game = function(width, height, parentId) {
     this.raf = null;
     this.graphics = null;
 
-    this.state = new OKED.StateManager(this);
+    this.state = new ED.StateManager(this);
 
     var self = this;
     this._onBoot = function() {
@@ -201,15 +201,15 @@ OKED.Game = function(width, height, parentId) {
     window.addEventListener('load', this._onBoot, false);
 };
 
-OKED.Game.prototype.update = function() {
+ED.Game.prototype.update = function() {
     this.state.update();
 };
 
-OKED.Game.prototype.render = function() {
+ED.Game.prototype.render = function() {
     this.state.render();
 };
 
-OKED.Game.prototype.boot = function() {
+ED.Game.prototype.boot = function() {
 
     if(this.isRunning) {
         return;
@@ -228,12 +228,12 @@ OKED.Game.prototype.boot = function() {
     this.parent.appendChild(this.canvas);
 
     // booting
-    this.graphics = new OKED.GDM(this);
+    this.graphics = new ED.GDM(this);
     this.graphics.boot();
 
     // ready start
     this.isRunning = true;
-    this.raf = new OKED.RAF(this);
+    this.raf = new ED.RAF(this);
     this.raf.start();
 };
 
@@ -244,7 +244,7 @@ OKED.Game.prototype.boot = function() {
 (function() {
     'use strict';
 
-    var game = new OKED.Game(960, 600, 'c');
+    var game = new ED.Game(960, 600, 'c');
 
     var main = {
 
