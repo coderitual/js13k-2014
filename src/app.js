@@ -96,18 +96,163 @@ ED.GDM.prototype.boot = function() {
 };
 
 /**
- * Input Manager
+ * Input Manager class
  * @param game
  * @constructor
  */
 
 ED.Input = function(game) {
     this.game = game;
+    this.keyboard = null;
 };
 
 ED.Input.prototype.boot = function() {
-
+    this.keyboard = new ED.Keyboard(this.game);
+    this.keyboard.start();
 };
+
+/**
+ * Keyboard Manager class
+ * @param game
+ * @constructor
+ */
+ED.Keyboard = function(game) {
+    this.game = game;
+    this._keys = [];
+};
+
+ED.Keyboard.prototype.start = function() {
+    var self = this;
+
+    this._onKeyDown = function (event) {
+        console.log('t');
+        return self.processKeyDown(event);
+    };
+
+    this._onKeyUp = function (event) {
+        return self.processKeyUp(event);
+    };
+
+    var keysCount = ED.Keys.COUNT;
+    while(keysCount--) this._keys.push(false);
+
+    window.addEventListener('keydown', this._onKeyDown, false);
+    window.addEventListener('keyup', this._onKeyUp, false);
+};
+
+ED.Keyboard.prototype.key = function(keycode) {
+    return this._keys[keycode]
+};
+
+ED.Keyboard.prototype.processKeyDown = function(event) {
+    this._keys[event.keyCode] = true;
+};
+
+ED.Keyboard.prototype.processKeyUp = function(event) {
+    this._keys[event.keyCode] = false;
+};
+
+ED.Keys = {};
+ED.Keys.COUNT = 256;
+
+ED.Keys.KEY_A = 65;
+ED.Keys.KEY_B = 66;
+ED.Keys.KEY_C = 67;
+ED.Keys.KEY_D = 68;
+ED.Keys.KEY_E = 69;
+ED.Keys.KEY_F = 70;
+ED.Keys.KEY_G = 71;
+ED.Keys.KEY_H = 72;
+ED.Keys.KEY_I = 73;
+ED.Keys.KEY_J = 74;
+ED.Keys.KEY_K = 75;
+ED.Keys.KEY_L = 76;
+ED.Keys.KEY_M = 77;
+ED.Keys.KEY_N = 78;
+ED.Keys.KEY_O = 79;
+ED.Keys.KEY_P = 80;
+ED.Keys.KEY_Q = 81;
+ED.Keys.KEY_R = 82;
+ED.Keys.KEY_S = 83;
+ED.Keys.KEY_T = 84;
+ED.Keys.KEY_U = 85;
+ED.Keys.KEY_V = 86;
+ED.Keys.KEY_W = 87;
+ED.Keys.KEY_X = 88;
+ED.Keys.KEY_Y = 89;
+ED.Keys.KEY_Z = 90;
+ED.Keys.KEY_ZERO = 48;
+ED.Keys.KEY_ONE = 49;
+ED.Keys.KEY_TWO = 50;
+ED.Keys.KEY_THREE = 51;
+ED.Keys.KEY_FOUR = 52;
+ED.Keys.KEY_FIVE = 53;
+ED.Keys.KEY_SIX = 54;
+ED.Keys.KEY_SEVEN =55;
+ED.Keys.KEY_EIGHT = 56;
+ED.Keys.KEY_NINE = 57;
+ED.Keys.KEY_NUMPAD_0 = 96;
+ED.Keys.KEY_NUMPAD_1 = 97;
+ED.Keys.KEY_NUMPAD_2 = 98;
+ED.Keys.KEY_NUMPAD_3 = 99;
+ED.Keys.KEY_NUMPAD_4 = 100;
+ED.Keys.KEY_NUMPAD_5 = 101;
+ED.Keys.KEY_NUMPAD_6 = 102;
+ED.Keys.KEY_NUMPAD_7 = 103;
+ED.Keys.KEY_NUMPAD_8 = 104;
+ED.Keys.KEY_NUMPAD_9 = 105;
+ED.Keys.KEY_NUMPAD_MULTIPLY = 106;
+ED.Keys.KEY_NUMPAD_ADD = 107;
+ED.Keys.KEY_NUMPAD_ENTER = 108;
+ED.Keys.KEY_NUMPAD_SUBTRACT = 109;
+ED.Keys.KEY_NUMPAD_DECIMAL = 110;
+ED.Keys.KEY_NUMPAD_DIVIDE = 111;
+ED.Keys.KEY_F1 = 112;
+ED.Keys.KEY_F2 = 113;
+ED.Keys.KEY_F3 = 114;
+ED.Keys.KEY_F4 = 115;
+ED.Keys.KEY_F5 = 116;
+ED.Keys.KEY_F6 = 117;
+ED.Keys.KEY_F7 = 118;
+ED.Keys.KEY_F8 = 119;
+ED.Keys.KEY_F9 = 120;
+ED.Keys.KEY_F10 = 121;
+ED.Keys.KEY_F11 = 122;
+ED.Keys.KEY_F12 = 123;
+ED.Keys.KEY_F13 = 124;
+ED.Keys.KEY_F14 = 125;
+ED.Keys.KEY_F15 = 126;
+ED.Keys.KEY_COLON = 186;
+ED.Keys.KEY_EQUALS = 187;
+ED.Keys.KEY_UNDERSCORE = 189;
+ED.Keys.KEY_QUESTION_MARK = 191;
+ED.Keys.KEY_TILDE = 192;
+ED.Keys.KEY_OPEN_BRACKET = 219;
+ED.Keys.KEY_BACKWARD_SLASH = 220;
+ED.Keys.KEY_CLOSED_BRACKET = 221;
+ED.Keys.KEY_QUOTES = 222;
+ED.Keys.KEY_BACKSPACE = 8;
+ED.Keys.KEY_TAB = 9;
+ED.Keys.KEY_CLEAR = 12;
+ED.Keys.KEY_ENTER = 13;
+ED.Keys.KEY_SHIFT = 16;
+ED.Keys.KEY_CONTROL = 17;
+ED.Keys.KEY_ALT = 18;
+ED.Keys.KEY_CAPS_LOCK = 20;
+ED.Keys.KEY_ESC = 27;
+ED.Keys.KEY_SPACEBAR = 32;
+ED.Keys.KEY_PAGE_UP = 33;
+ED.Keys.KEY_PAGE_DOWN = 34;
+ED.Keys.KEY_END = 35;
+ED.Keys.KEY_HOME = 36;
+ED.Keys.KEY_LEFT = 37;
+ED.Keys.KEY_UP = 38;
+ED.Keys.KEY_RIGHT = 39;
+ED.Keys.KEY_DOWN = 40;
+ED.Keys.KEY_INSERT = 45;
+ED.Keys.KEY_DELETE = 46;
+ED.Keys.KEY_HELP = 47;
+ED.Keys.KEY_NUM_LOCK = 144;
 
 /**
  * State manager
@@ -190,6 +335,7 @@ ED.Game = function(width, height, parentId) {
     this.canvas = null;
     this.raf = null;
     this.graphics = null;
+    this.input = null;
 
     this.state = new ED.StateManager(this);
 
@@ -229,7 +375,10 @@ ED.Game.prototype.boot = function() {
 
     // booting
     this.graphics = new ED.GDM(this);
+    this.input = new ED.Input(this);
+
     this.graphics.boot();
+    this.input.boot();
 
     // ready start
     this.isRunning = true;
@@ -257,7 +406,9 @@ ED.Game.prototype.boot = function() {
         },
 
         update: function() {
-
+            if(game.input.keyboard.key(ED.Keys.KEY_A)) {
+                console.log('a');
+            }
         },
 
         render: function() {
