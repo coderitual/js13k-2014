@@ -120,6 +120,38 @@ ED.Mouse = function(game) {
     this.game = game;
 };
 
+ED.Mouse.prototype.start = function() {
+    var self = this;
+
+    this._onMouseDown = function (event) {
+        return self.processMouseDown(event);
+    };
+
+    this._onMouseMove = function (event) {
+        return self.processMouseMove(event);
+    };
+
+    this._onMouseUp = function (event) {
+        return self.processMouseUp(event);
+    };
+
+    this.game.canvas.addEventListener('mousedown', this._onMouseDown, true);
+    this.game.canvas.addEventListener('mousemove', this._onMouseMove, true);
+    this.game.canvas.addEventListener('mouseup', this._onMouseUp, true);
+};
+
+ED.Mouse.prototype.processMouseDown = function(event) {
+
+};
+
+ED.Mouse.prototype.processMouseMove = function(event) {
+
+};
+
+ED.Mouse.prototype.processMouseUp = function(event) {
+
+};
+
 /**
  * Keyboard manager class
  * @param game
@@ -141,7 +173,7 @@ ED.Keyboard.prototype.start = function() {
         return self.processKeyUp(event);
     };
 
-    var keysCount = ED.Keys.COUNT;
+    var keysCount = ED.Keys.MAX;
     while(keysCount--) this._keys.push(false);
 
     window.addEventListener('keydown', this._onKeyDown, false);
@@ -161,7 +193,7 @@ ED.Keyboard.prototype.processKeyUp = function(event) {
 };
 
 ED.Keys = {};
-ED.Keys.COUNT = 256;
+ED.Keys.MAX = 256;
 
 ED.Keys.KEY_A = 65;
 ED.Keys.KEY_B = 66;
@@ -308,8 +340,8 @@ ED.StateManager.prototype.update = function() {
         if(this._state) this._state.unload(this._pending);
         this._state = this.states[this._pending];
         this._state.load(this.current);
-        this._pending = '';
         this.current = this._pending;
+        this._pending = '';
     }
 
     if(this._state) {
