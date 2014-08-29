@@ -96,7 +96,7 @@ ED.GDM.prototype.boot = function() {
 };
 
 /**
- * Input Manager class
+ * Input manager class
  * @param game
  * @constructor
  */
@@ -112,7 +112,16 @@ ED.Input.prototype.boot = function() {
 };
 
 /**
- * Keyboard Manager class
+ * Mouse manager class
+ * @param game
+ * @constructor
+ */
+ED.Mouse = function(game) {
+    this.game = game;
+};
+
+/**
+ * Keyboard manager class
  * @param game
  * @constructor
  */
@@ -125,7 +134,6 @@ ED.Keyboard.prototype.start = function() {
     var self = this;
 
     this._onKeyDown = function (event) {
-        console.log('t');
         return self.processKeyDown(event);
     };
 
@@ -397,8 +405,10 @@ ED.Game.prototype.boot = function() {
 
     var main = {
 
-        load: function() {
+        keyboard: null,
 
+        load: function() {
+            this.keyboard = this.game.input.keyboard;
         },
 
         unload: function() {
@@ -406,8 +416,8 @@ ED.Game.prototype.boot = function() {
         },
 
         update: function() {
-            if(game.input.keyboard.key(ED.Keys.KEY_A)) {
-                console.log('a');
+            if(this.keyboard.key(ED.Keys.KEY_A)) {
+
             }
         },
 
