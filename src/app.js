@@ -58,12 +58,18 @@ ED.RAF.prototype.update = function() {
     this._lastCall = Date.now();
     this._accum += delta;
 
+    // max accumulator to avoid spiral of death
+    if(this._accum > 200) {
+        this._accum = 200;
+    }
+
     while (this._accum >= dt) {
         this.game.update();
         this._accum -= dt;
     }
 
-    this.game.render();
+    var alpha = this._accum / dt;
+    this.game.render(alpha);
 
     window.RAF(this._onRAF);
 };
@@ -418,10 +424,11 @@ ED.Game.prototype.boot = function() {
     this.canvas.style.height = '100%';
     this.parent.appendChild(this.canvas);
 
-    // booting
+    // game core services
     this.graphics = new ED.GDM(this);
     this.input = new ED.Input(this);
 
+    // booting
     this.graphics.boot();
     this.input.boot();
 
@@ -442,9 +449,9 @@ ED.Game.prototype.boot = function() {
 
     var main = {
 
-        keyboard: null,
-
         load: function() {
+
+            // shortcuts
             this.keyboard = this.game.input.keyboard;
         },
 
