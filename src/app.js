@@ -8,7 +8,7 @@
  * El Duel Library
  */
 
-var ED = {};
+var EL = {};
 
 /**
  * RequestAnimationFrame helper service
@@ -16,7 +16,7 @@ var ED = {};
  * @constructor
  */
 
-ED.RAF = function(game) {
+EL.RAF = function(game) {
     this.game = game;
     this.timeStep = 1/60;
 
@@ -34,7 +34,7 @@ ED.RAF = function(game) {
     })();
 };
 
-ED.RAF.prototype.start = function() {
+EL.RAF.prototype.start = function() {
     var self = this;
 
     this._onRAF = function() {
@@ -47,7 +47,7 @@ ED.RAF.prototype.start = function() {
     this.update();
 };
 
-ED.RAF.prototype.update = function() {
+EL.RAF.prototype.update = function() {
     if(!this.game.isRunning) {
         return;
     }
@@ -58,7 +58,6 @@ ED.RAF.prototype.update = function() {
     this._lastCall = Date.now();
     this._accum += delta;
 
-    // max accumulator to avoid spiral of death
     if(this._accum > 200) {
         this._accum = 200;
     }
@@ -79,11 +78,11 @@ ED.RAF.prototype.update = function() {
  * @param game
  * @constructor
  */
-ED.GDM = function(game) {
+EL.Graphics = function(game) {
     this.game = game;
 };
 
-ED.GDM.prototype.boot = function() {
+EL.Graphics.prototype.boot = function() {
 
     this.gl = null;
     var canvas = this.game.canvas;
@@ -107,16 +106,16 @@ ED.GDM.prototype.boot = function() {
  * @constructor
  */
 
-ED.Input = function(game) {
+EL.Input = function(game) {
     this.game = game;
     this.keyboard = null;
     this.mouse = null;
 };
 
-ED.Input.prototype.boot = function() {
+EL.Input.prototype.boot = function() {
 
-    this.keyboard = new ED.Keyboard(this.game);
-    this.mouse = new ED.Mouse(this.game);
+    this.keyboard = new EL.Keyboard(this.game);
+    this.mouse = new EL.Mouse(this.game);
 
     this.keyboard.start();
     this.mouse.start();
@@ -127,11 +126,11 @@ ED.Input.prototype.boot = function() {
  * @param game
  * @constructor
  */
-ED.Mouse = function(game) {
+EL.Mouse = function(game) {
     this.game = game;
 };
 
-ED.Mouse.prototype.start = function() {
+EL.Mouse.prototype.start = function() {
     var self = this;
 
     this._onMouseDown = function (event) {
@@ -151,15 +150,15 @@ ED.Mouse.prototype.start = function() {
     this.game.canvas.addEventListener('mouseup', this._onMouseUp, true);
 };
 
-ED.Mouse.prototype.processMouseDown = function(event) {
+EL.Mouse.prototype.processMouseDown = function(event) {
 
 };
 
-ED.Mouse.prototype.processMouseMove = function(event) {
+EL.Mouse.prototype.processMouseMove = function(event) {
 
 };
 
-ED.Mouse.prototype.processMouseUp = function(event) {
+EL.Mouse.prototype.processMouseUp = function(event) {
 
 };
 
@@ -168,12 +167,12 @@ ED.Mouse.prototype.processMouseUp = function(event) {
  * @param game
  * @constructor
  */
-ED.Keyboard = function(game) {
+EL.Keyboard = function(game) {
     this.game = game;
     this._keys = [];
 };
 
-ED.Keyboard.prototype.start = function() {
+EL.Keyboard.prototype.start = function() {
     var self = this;
 
     this._onKeyDown = function (event) {
@@ -184,133 +183,133 @@ ED.Keyboard.prototype.start = function() {
         return self.processKeyUp(event);
     };
 
-    var keysCount = ED.Keys.MAX;
+    var keysCount = EL.Keys.MAX;
     while(keysCount--) this._keys.push(false);
 
     window.addEventListener('keydown', this._onKeyDown, false);
     window.addEventListener('keyup', this._onKeyUp, false);
 };
 
-ED.Keyboard.prototype.key = function(keycode) {
+EL.Keyboard.prototype.key = function(keycode) {
     return this._keys[keycode]
 };
 
-ED.Keyboard.prototype.processKeyDown = function(event) {
+EL.Keyboard.prototype.processKeyDown = function(event) {
     this._keys[event.keyCode] = true;
 };
 
-ED.Keyboard.prototype.processKeyUp = function(event) {
+EL.Keyboard.prototype.processKeyUp = function(event) {
     this._keys[event.keyCode] = false;
 };
 
-ED.Keys = {};
-ED.Keys.MAX = 256;
+EL.Keys = {};
+EL.Keys.MAX = 256;
 
-ED.Keys.KEY_A = 65;
-ED.Keys.KEY_B = 66;
-ED.Keys.KEY_C = 67;
-ED.Keys.KEY_D = 68;
-ED.Keys.KEY_E = 69;
-ED.Keys.KEY_F = 70;
-ED.Keys.KEY_G = 71;
-ED.Keys.KEY_H = 72;
-ED.Keys.KEY_I = 73;
-ED.Keys.KEY_J = 74;
-ED.Keys.KEY_K = 75;
-ED.Keys.KEY_L = 76;
-ED.Keys.KEY_M = 77;
-ED.Keys.KEY_N = 78;
-ED.Keys.KEY_O = 79;
-ED.Keys.KEY_P = 80;
-ED.Keys.KEY_Q = 81;
-ED.Keys.KEY_R = 82;
-ED.Keys.KEY_S = 83;
-ED.Keys.KEY_T = 84;
-ED.Keys.KEY_U = 85;
-ED.Keys.KEY_V = 86;
-ED.Keys.KEY_W = 87;
-ED.Keys.KEY_X = 88;
-ED.Keys.KEY_Y = 89;
-ED.Keys.KEY_Z = 90;
-ED.Keys.KEY_ZERO = 48;
-ED.Keys.KEY_ONE = 49;
-ED.Keys.KEY_TWO = 50;
-ED.Keys.KEY_THREE = 51;
-ED.Keys.KEY_FOUR = 52;
-ED.Keys.KEY_FIVE = 53;
-ED.Keys.KEY_SIX = 54;
-ED.Keys.KEY_SEVEN =55;
-ED.Keys.KEY_EIGHT = 56;
-ED.Keys.KEY_NINE = 57;
-ED.Keys.KEY_NUMPAD_0 = 96;
-ED.Keys.KEY_NUMPAD_1 = 97;
-ED.Keys.KEY_NUMPAD_2 = 98;
-ED.Keys.KEY_NUMPAD_3 = 99;
-ED.Keys.KEY_NUMPAD_4 = 100;
-ED.Keys.KEY_NUMPAD_5 = 101;
-ED.Keys.KEY_NUMPAD_6 = 102;
-ED.Keys.KEY_NUMPAD_7 = 103;
-ED.Keys.KEY_NUMPAD_8 = 104;
-ED.Keys.KEY_NUMPAD_9 = 105;
-ED.Keys.KEY_NUMPAD_MULTIPLY = 106;
-ED.Keys.KEY_NUMPAD_ADD = 107;
-ED.Keys.KEY_NUMPAD_ENTER = 108;
-ED.Keys.KEY_NUMPAD_SUBTRACT = 109;
-ED.Keys.KEY_NUMPAD_DECIMAL = 110;
-ED.Keys.KEY_NUMPAD_DIVIDE = 111;
-ED.Keys.KEY_F1 = 112;
-ED.Keys.KEY_F2 = 113;
-ED.Keys.KEY_F3 = 114;
-ED.Keys.KEY_F4 = 115;
-ED.Keys.KEY_F5 = 116;
-ED.Keys.KEY_F6 = 117;
-ED.Keys.KEY_F7 = 118;
-ED.Keys.KEY_F8 = 119;
-ED.Keys.KEY_F9 = 120;
-ED.Keys.KEY_F10 = 121;
-ED.Keys.KEY_F11 = 122;
-ED.Keys.KEY_F12 = 123;
-ED.Keys.KEY_F13 = 124;
-ED.Keys.KEY_F14 = 125;
-ED.Keys.KEY_F15 = 126;
-ED.Keys.KEY_COLON = 186;
-ED.Keys.KEY_EQUALS = 187;
-ED.Keys.KEY_UNDERSCORE = 189;
-ED.Keys.KEY_QUESTION_MARK = 191;
-ED.Keys.KEY_TILDE = 192;
-ED.Keys.KEY_OPEN_BRACKET = 219;
-ED.Keys.KEY_BACKWARD_SLASH = 220;
-ED.Keys.KEY_CLOSED_BRACKET = 221;
-ED.Keys.KEY_QUOTES = 222;
-ED.Keys.KEY_BACKSPACE = 8;
-ED.Keys.KEY_TAB = 9;
-ED.Keys.KEY_CLEAR = 12;
-ED.Keys.KEY_ENTER = 13;
-ED.Keys.KEY_SHIFT = 16;
-ED.Keys.KEY_CONTROL = 17;
-ED.Keys.KEY_ALT = 18;
-ED.Keys.KEY_CAPS_LOCK = 20;
-ED.Keys.KEY_ESC = 27;
-ED.Keys.KEY_SPACEBAR = 32;
-ED.Keys.KEY_PAGE_UP = 33;
-ED.Keys.KEY_PAGE_DOWN = 34;
-ED.Keys.KEY_END = 35;
-ED.Keys.KEY_HOME = 36;
-ED.Keys.KEY_LEFT = 37;
-ED.Keys.KEY_UP = 38;
-ED.Keys.KEY_RIGHT = 39;
-ED.Keys.KEY_DOWN = 40;
-ED.Keys.KEY_INSERT = 45;
-ED.Keys.KEY_DELETE = 46;
-ED.Keys.KEY_HELP = 47;
-ED.Keys.KEY_NUM_LOCK = 144;
+EL.Keys.KEY_A = 65;
+EL.Keys.KEY_B = 66;
+EL.Keys.KEY_C = 67;
+EL.Keys.KEY_D = 68;
+EL.Keys.KEY_E = 69;
+EL.Keys.KEY_F = 70;
+EL.Keys.KEY_G = 71;
+EL.Keys.KEY_H = 72;
+EL.Keys.KEY_I = 73;
+EL.Keys.KEY_J = 74;
+EL.Keys.KEY_K = 75;
+EL.Keys.KEY_L = 76;
+EL.Keys.KEY_M = 77;
+EL.Keys.KEY_N = 78;
+EL.Keys.KEY_O = 79;
+EL.Keys.KEY_P = 80;
+EL.Keys.KEY_Q = 81;
+EL.Keys.KEY_R = 82;
+EL.Keys.KEY_S = 83;
+EL.Keys.KEY_T = 84;
+EL.Keys.KEY_U = 85;
+EL.Keys.KEY_V = 86;
+EL.Keys.KEY_W = 87;
+EL.Keys.KEY_X = 88;
+EL.Keys.KEY_Y = 89;
+EL.Keys.KEY_Z = 90;
+EL.Keys.KEY_ZERO = 48;
+EL.Keys.KEY_ONE = 49;
+EL.Keys.KEY_TWO = 50;
+EL.Keys.KEY_THREE = 51;
+EL.Keys.KEY_FOUR = 52;
+EL.Keys.KEY_FIVE = 53;
+EL.Keys.KEY_SIX = 54;
+EL.Keys.KEY_SEVEN =55;
+EL.Keys.KEY_EIGHT = 56;
+EL.Keys.KEY_NINE = 57;
+EL.Keys.KEY_NUMPAD_0 = 96;
+EL.Keys.KEY_NUMPAD_1 = 97;
+EL.Keys.KEY_NUMPAD_2 = 98;
+EL.Keys.KEY_NUMPAD_3 = 99;
+EL.Keys.KEY_NUMPAD_4 = 100;
+EL.Keys.KEY_NUMPAD_5 = 101;
+EL.Keys.KEY_NUMPAD_6 = 102;
+EL.Keys.KEY_NUMPAD_7 = 103;
+EL.Keys.KEY_NUMPAD_8 = 104;
+EL.Keys.KEY_NUMPAD_9 = 105;
+EL.Keys.KEY_NUMPAD_MULTIPLY = 106;
+EL.Keys.KEY_NUMPAD_ADD = 107;
+EL.Keys.KEY_NUMPAD_ENTER = 108;
+EL.Keys.KEY_NUMPAD_SUBTRACT = 109;
+EL.Keys.KEY_NUMPAD_DECIMAL = 110;
+EL.Keys.KEY_NUMPAD_DIVIDE = 111;
+EL.Keys.KEY_F1 = 112;
+EL.Keys.KEY_F2 = 113;
+EL.Keys.KEY_F3 = 114;
+EL.Keys.KEY_F4 = 115;
+EL.Keys.KEY_F5 = 116;
+EL.Keys.KEY_F6 = 117;
+EL.Keys.KEY_F7 = 118;
+EL.Keys.KEY_F8 = 119;
+EL.Keys.KEY_F9 = 120;
+EL.Keys.KEY_F10 = 121;
+EL.Keys.KEY_F11 = 122;
+EL.Keys.KEY_F12 = 123;
+EL.Keys.KEY_F13 = 124;
+EL.Keys.KEY_F14 = 125;
+EL.Keys.KEY_F15 = 126;
+EL.Keys.KEY_COLON = 186;
+EL.Keys.KEY_EQUALS = 187;
+EL.Keys.KEY_UNDERSCORE = 189;
+EL.Keys.KEY_QUESTION_MARK = 191;
+EL.Keys.KEY_TILDE = 192;
+EL.Keys.KEY_OPEN_BRACKET = 219;
+EL.Keys.KEY_BACKWARD_SLASH = 220;
+EL.Keys.KEY_CLOSEL_BRACKET = 221;
+EL.Keys.KEY_QUOTES = 222;
+EL.Keys.KEY_BACKSPACE = 8;
+EL.Keys.KEY_TAB = 9;
+EL.Keys.KEY_CLEAR = 12;
+EL.Keys.KEY_ENTER = 13;
+EL.Keys.KEY_SHIFT = 16;
+EL.Keys.KEY_CONTROL = 17;
+EL.Keys.KEY_ALT = 18;
+EL.Keys.KEY_CAPS_LOCK = 20;
+EL.Keys.KEY_ESC = 27;
+EL.Keys.KEY_SPACEBAR = 32;
+EL.Keys.KEY_PAGE_UP = 33;
+EL.Keys.KEY_PAGE_DOWN = 34;
+EL.Keys.KEY_END = 35;
+EL.Keys.KEY_HOME = 36;
+EL.Keys.KEY_LEFT = 37;
+EL.Keys.KEY_UP = 38;
+EL.Keys.KEY_RIGHT = 39;
+EL.Keys.KEY_DOWN = 40;
+EL.Keys.KEY_INSERT = 45;
+EL.Keys.KEY_DELETE = 46;
+EL.Keys.KEY_HELP = 47;
+EL.Keys.KEY_NUM_LOCK = 144;
 
 /**
  * State manager
  * @param game
  * @constructor
  */
-ED.StateManager = function(game) {
+EL.StateManager = function(game) {
     this.game = game;
     this.states = {};
     this.current = '';
@@ -319,12 +318,12 @@ ED.StateManager = function(game) {
     this._state = null;
 };
 
-ED.StateManager.prototype.add = function(key, state) {
+EL.StateManager.prototype.add = function(key, state) {
     this.states[key] = state;
     this.states[key].game = this.game;
 };
 
-ED.StateManager.prototype.set = function(key) {
+EL.StateManager.prototype.set = function(key) {
     var state = this.states[key],
         methods = ['update', 'render', 'load', 'unload'],
         valid = false;
@@ -344,7 +343,7 @@ ED.StateManager.prototype.set = function(key) {
     this._pending = key;
 };
 
-ED.StateManager.prototype.update = function() {
+EL.StateManager.prototype.update = function() {
 
     if(this._pending) {
 
@@ -360,7 +359,7 @@ ED.StateManager.prototype.update = function() {
     }
 };
 
-ED.StateManager.prototype.render = function(alpha) {
+EL.StateManager.prototype.render = function(alpha) {
 
     if(this._state) {
         this._state.render(alpha);
@@ -374,7 +373,7 @@ ED.StateManager.prototype.render = function(alpha) {
  * @param parentId
  * @constructor
  */
-ED.Game = function(width, height, parentId) {
+EL.Game = function(width, height, parentId) {
     this.isRunning = false;
 
     this.width = width;
@@ -388,7 +387,7 @@ ED.Game = function(width, height, parentId) {
     this.graphics = null;
     this.input = null;
 
-    this.state = new ED.StateManager(this);
+    this.state = new EL.StateManager(this);
 
     var self = this;
     this._onBoot = function() {
@@ -398,15 +397,15 @@ ED.Game = function(width, height, parentId) {
     window.addEventListener('load', this._onBoot, false);
 };
 
-ED.Game.prototype.update = function() {
+EL.Game.prototype.update = function() {
     this.state.update();
 };
 
-ED.Game.prototype.render = function(alpha) {
+EL.Game.prototype.render = function(alpha) {
     this.state.render(alpha);
 };
 
-ED.Game.prototype.boot = function() {
+EL.Game.prototype.boot = function() {
 
     if(this.isRunning) {
         return;
@@ -425,8 +424,8 @@ ED.Game.prototype.boot = function() {
     this.parent.appendChild(this.canvas);
 
     // game core services
-    this.graphics = new ED.GDM(this);
-    this.input = new ED.Input(this);
+    this.graphics = new EL.Graphics(this);
+    this.input = new EL.Input(this);
 
     // booting
     this.graphics.boot();
@@ -434,7 +433,7 @@ ED.Game.prototype.boot = function() {
 
     // ready start
     this.isRunning = true;
-    this.raf = new ED.RAF(this);
+    this.raf = new EL.RAF(this);
     this.raf.start();
 };
 
@@ -443,7 +442,7 @@ ED.Game.prototype.boot = function() {
  * @type {{}}
  */
 
-ED.GDM.Poly = {};
+EL.Graphics.Poly = {};
 
 /**
  * Triangulation (Thanks to IvanK and Mat Groves )
@@ -451,7 +450,7 @@ ED.GDM.Poly = {};
  * @returns {Array}
  * @constructor
  */
-ED.GDM.Poly.Triangulate = function(p) {
+EL.Graphics.Poly.Triangulate = function(p) {
     var sign = true;
 
     var n = p.length >> 1;
@@ -473,13 +472,13 @@ ED.GDM.Poly.Triangulate = function(p) {
         var cx = p[2*i2],  cy = p[2*i2+1];
 
         var earFound = false;
-        if(ED.GDM.Poly._convex(ax, ay, bx, by, cx, cy, sign)) {
+        if(EL.Graphics.Poly._convex(ax, ay, bx, by, cx, cy, sign)) {
             earFound = true;
             for(var j = 0; j < al; j++) {
                 var vi = avl[j];
                 if(vi === i0 || vi === i1 || vi === i2) continue;
 
-                if(ED.GDM.Poly._PointInTriangle(p[2*vi], p[2*vi+1], ax, ay, bx, by, cx, cy)) {
+                if(EL.Graphics.Poly._PointInTriangle(p[2*vi], p[2*vi+1], ax, ay, bx, by, cx, cy)) {
                     earFound = false;
                     break;
                 }
@@ -516,7 +515,7 @@ ED.GDM.Poly.Triangulate = function(p) {
     return tgs;
 };
 
-ED.GDM.Poly._PointInTriangle = function(px, py, ax, ay, bx, by, cx, cy) {
+EL.Graphics.Poly._PointInTriangle = function(px, py, ax, ay, bx, by, cx, cy) {
     var v0x = cx-ax;
     var v0y = cy-ay;
     var v1x = bx-ax;
@@ -538,7 +537,7 @@ ED.GDM.Poly._PointInTriangle = function(px, py, ax, ay, bx, by, cx, cy) {
     return (u >= 0) && (v >= 0) && (u + v < 1);
 };
 
-ED.GDM.Poly._convex = function(ax, ay, bx, by, cx, cy, sign) {
+EL.Graphics.Poly._convex = function(ax, ay, bx, by, cx, cy, sign) {
     return ((ay-by)*(cx-bx) + (bx-ax)*(cy-by) >= 0) === sign;
 };
 
@@ -549,7 +548,7 @@ ED.GDM.Poly._convex = function(ax, ay, bx, by, cx, cy, sign) {
 (function() {
     'use strict';
 
-    var game = new ED.Game(960, 600, 'c');
+    var game = new EL.Game(960, 600, 'c');
 
     var main = {
 
@@ -564,12 +563,12 @@ ED.GDM.Poly._convex = function(ax, ay, bx, by, cx, cy, sign) {
         },
 
         update: function() {
-            if(this.keyboard.key(ED.Keys.KEY_A)) {
+            if(this.keyboard.key(EL.Keys.KEY_A)) {
 
             }
         },
 
-        render: function() {
+        render: function(alpha) {
 
         }
     };
