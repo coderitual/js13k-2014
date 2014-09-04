@@ -706,8 +706,7 @@ EL.Graphics.ShaderProgram.prototype.use = function() {
 
             // draw
             gl.drawElements(gl.TRIANGLES, this.shipIndices.length, gl.UNSIGNED_SHORT, 0);
-
-
+            gl.drawArrays(gl.LINE_LOOP, 0, this.shipVerts.length / 2);
         }
     };
 
