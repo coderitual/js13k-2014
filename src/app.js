@@ -93,7 +93,7 @@ EL.Graphics.prototype.boot = function() {
     catch(e) {}
 
     if (!this.gl) {
-        alert("Unable to initialize WebGL. Your browser may not support it.");
+        console.warn("Unable to initialize WebGL. Your browser may not support it.");
         this.gl = null;
     }
 
@@ -419,8 +419,8 @@ EL.Game.prototype.boot = function() {
     this.canvas.width = this.width;
     this.canvas.height = this.height;
     this.canvas.style.display = 'block';
-    this.canvas.style.width = '100%';
-    this.canvas.style.height = '100%';
+  //  this.canvas.style.width = '100%';
+  //  this.canvas.style.height = '100%';
     this.parent.appendChild(this.canvas);
 
     // game core services
@@ -542,13 +542,68 @@ EL.Graphics.Poly._convex = function(ax, ay, bx, by, cx, cy, sign) {
 };
 
 /**
+ * Generic shader class
+ * @param graphics
+ * @constructor
+ */
+EL.Graphics.Shader = function(graphics) {
+    this.graphics = graphics;
+    this.gl = graphics.gl;
+    this.shader = null;
+    this.type = null;
+};
+
+EL.Graphics.Shader.prototype.fromSource = function(src, type) {
+    var gl = this.gl;
+    this.type = gl[type];
+
+    var shader = gl.createShader(this.type);
+    gl.shaderSource(shader, src);
+    gl.compileShader(shader);
+
+    // See if it compiled successfully
+    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        console.warn("An error occurred compiling the shaders: " + gl.getShaderInfoLog(shader));
+        return;
+    }
+
+    this.shader = shader;
+};
+
+/**
+ * Shader program
+ * @param graphics
+ * @constructor
+ */
+EL.Graphics.ShaderProgram = function(graphics) {
+    this.graphics = graphics;
+    this.gl = graphics.gl;
+    this.program = this.gl.createProgram();
+};
+
+EL.Graphics.ShaderProgram.prototype.attach = function(shader) {
+    this.gl.attachShader(this.program, shader.shader);
+    return this;
+};
+
+EL.Graphics.ShaderProgram.prototype.link = function() {
+    this.gl.linkProgram(this.program);
+    return this;
+};
+
+EL.Graphics.ShaderProgram.prototype.use = function() {
+    this.gl.useProgram(this.program);
+    return this;
+};
+
+/**
  * Game
  */
 
 (function() {
     'use strict';
 
-    var game = new EL.Game(960, 600, 'c');
+    var game = new EL.Game(1152, 720, 'c');
 
     var main = {
 
@@ -556,6 +611,68 @@ EL.Graphics.Poly._convex = function(ax, ay, bx, by, cx, cy, sign) {
 
             // shortcuts
             this.keyboard = this.game.input.keyboard;
+            this.graphics = this.game.graphics;
+            var gl = this.graphics.gl;
+
+            // objects
+            this.shipVerts = new Float32Array([0, 0, 0, 22, 15, 37, 35, 37, 51, 21, 51, 0, 36, 15, 26, 6, 16, 16]);
+            this.shipIndices = new Uint16Array(EL.Graphics.Poly.Triangulate(this.shipVerts));
+
+            // simple shader
+            var fragmentShader = new EL.Graphics.Shader(this.graphics);
+            fragmentShader.fromSource([
+                'void main(void) {',
+                '    gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);',
+                '}'
+            ].join(''), 'FRAGMENT_SHADER');
+
+            var vertexShader = new EL.Graphics.Shader(this.graphics);
+            vertexShader.fromSource([
+                'attribute vec2 aVertexPosition;',
+                'uniform mat4 uMVMatrix;',
+                'uniform mat4 uPMatrix;',
+                'void main(void) {',
+                '    gl_Position = uMVMatrix * vec4(aVertexPosition, 1.0, 1.0);',
+                '}'
+            ].join(''), 'VERTEX_SHADER');
+
+            var mainShader = new EL.Graphics.ShaderProgram(this.graphics);
+            mainShader.attach(fragmentShader).attach(vertexShader).link();
+
+            mainShader.uMVMatrix = mainShader.gl.getUniformLocation(mainShader.program, "uMVMatrix");
+
+            mainShader.vertexPositionAttribute = mainShader.gl.getAttribLocation(mainShader.program, "aVertexPosition");
+            mainShader.gl.enableVertexAttribArray(mainShader.vertexPositionAttribute);
+
+            this.mainShader = mainShader;
+
+            this.vertexBuffer = gl.createBuffer();
+            this.indexBuffer = gl.createBuffer();
+
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
+            gl.bufferData(gl.ARRAY_BUFFER, this.shipVerts, gl.DYNAMIC_DRAW);
+
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
+            gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, this.shipIndices, gl.STATIC_DRAW);
+
+            var projectionMatrix = new Float32Array(16);
+            for (var i = 0; i < projectionMatrix.length; i++) {
+                projectionMatrix[i] = +((i % 5) == 0); // uniform matrix
+            }
+
+            projectionMatrix[0] = 2 / this.game.width;
+            projectionMatrix[5] = -2 / this.game.height;
+            projectionMatrix[12] = -1;
+            projectionMatrix[13] = 1;
+
+            this.projectionMatrix = projectionMatrix;
+
+
+            // draw settings
+            gl.disable(gl.DEPTH_TEST);
+            gl.disable(gl.CULL_FACE);
+            gl.enable(gl.BLEND);
+            gl.colorMask(true, true, true, true);
         },
 
         unload: function() {
@@ -568,7 +685,28 @@ EL.Graphics.Poly._convex = function(ax, ay, bx, by, cx, cy, sign) {
             }
         },
 
-        render: function(alpha) {
+        render: function() {
+            var gl = this.game.graphics.gl;
+
+            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+            gl.clearColor(101 / 255, 156 / 255, 239 / 255, 1);  // cornflower blue
+            gl.clear(gl.COLOR_BUFFER_BIT);
+
+            gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+            this.mainShader.use();
+
+            gl.uniformMatrix4fv(this.mainShader.uMVMatrix, false, this.projectionMatrix);
+
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
+            gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.shipVerts);
+            gl.vertexAttribPointer(this.mainShader.vertexPositionAttribute, 2, gl.FLOAT, false, 0, 0);
+
+            // indices
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
+
+            // draw
+            gl.drawElements(gl.TRIANGLES, this.shipIndices.length, gl.UNSIGNED_SHORT, 0);
+
 
         }
     };
