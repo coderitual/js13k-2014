@@ -579,6 +579,8 @@ EL.Graphics.ShaderProgram = function(graphics) {
     this.graphics = graphics;
     this.gl = graphics.gl;
     this.program = this.gl.createProgram();
+    this.attributes = {};
+    this.uniforms = {};
 };
 
 EL.Graphics.ShaderProgram.prototype.attach = function(shader) {
@@ -593,8 +595,31 @@ EL.Graphics.ShaderProgram.prototype.link = function() {
 
 EL.Graphics.ShaderProgram.prototype.use = function() {
     this.gl.useProgram(this.program);
-    return this;
+
+    for(var attr in this.attributes) {
+        this.gl.enableVertexAttribArray(this.attributes[attr]);
+    }
 };
+
+EL.Graphics.ShaderProgram.prototype.unuse = function() {
+    for(var attr in this.attributes) {
+        this.gl.disableVertexAttribArray(this.attributes[attr]);
+    }
+
+    this.gl.useProgram(null);
+};
+
+EL.Graphics.ShaderProgram.prototype.uniform = function(name) {
+    this.uniforms[name] = this.gl.getUniformLocation(this.program, name);
+};
+
+EL.Graphics.ShaderProgram.prototype.attribute = function(name) {
+    this.attributes[name] = this.gl.getAttribLocation(this.program, name);
+};
+
+
+/**
+
 
 /**
  * Game
@@ -603,7 +628,7 @@ EL.Graphics.ShaderProgram.prototype.use = function() {
 (function() {
     'use strict';
 
-    var game = new EL.Game(1152, 720, 'c');
+    var game = new EL.Game(1280, 720, 'c');
 
     var main = {
 
@@ -622,7 +647,7 @@ EL.Graphics.ShaderProgram.prototype.use = function() {
             var fragmentShader = new EL.Graphics.Shader(this.graphics);
             fragmentShader.fromSource([
                 'void main(void) {',
-                '    gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);',
+                '    gl_FragColor = vec4(0.0, 0.0, 0.0, 1);',
                 '}'
             ].join(''), 'FRAGMENT_SHADER');
 
@@ -638,11 +663,8 @@ EL.Graphics.ShaderProgram.prototype.use = function() {
 
             var mainShader = new EL.Graphics.ShaderProgram(this.graphics);
             mainShader.attach(fragmentShader).attach(vertexShader).link();
-
-            mainShader.uMVMatrix = mainShader.gl.getUniformLocation(mainShader.program, "uMVMatrix");
-
-            mainShader.vertexPositionAttribute = mainShader.gl.getAttribLocation(mainShader.program, "aVertexPosition");
-            mainShader.gl.enableVertexAttribArray(mainShader.vertexPositionAttribute);
+            mainShader.uniform('uMVMatrix');
+            mainShader.attribute('aVertexPosition');
 
             this.mainShader = mainShader;
 
@@ -695,11 +717,11 @@ EL.Graphics.ShaderProgram.prototype.use = function() {
             gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
             this.mainShader.use();
 
-            gl.uniformMatrix4fv(this.mainShader.uMVMatrix, false, this.projectionMatrix);
+            gl.uniformMatrix4fv(this.mainShader.uniforms.uMVMatrix, false, this.projectionMatrix);
 
             gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
             gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.shipVerts);
-            gl.vertexAttribPointer(this.mainShader.vertexPositionAttribute, 2, gl.FLOAT, false, 0, 0);
+            gl.vertexAttribPointer(this.mainShader.attributes.aVertexPosition, 2, gl.FLOAT, false, 0, 0);
 
             // indices
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
@@ -713,3 +735,4 @@ EL.Graphics.ShaderProgram.prototype.use = function() {
     game.state.add('main', main);
     game.state.set('main');
 })();
+
