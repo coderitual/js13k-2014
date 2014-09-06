@@ -419,8 +419,8 @@ EL.Game.prototype.boot = function() {
     this.canvas.width = this.width;
     this.canvas.height = this.height;
     this.canvas.style.display = 'block';
-  //  this.canvas.style.width = '100%';
-  //  this.canvas.style.height = '100%';
+   // this.canvas.style.width = '100%';
+   // this.canvas.style.height = '100%';
     this.parent.appendChild(this.canvas);
 
     // game core services
@@ -619,7 +619,239 @@ EL.Graphics.ShaderProgram.prototype.attribute = function(name) {
 
 
 /**
+ * Render target class
+ * @param graphics
+ * @constructor
+ */
+EL.Graphics.RenderTarget = function(graphics) {
+    this.graphics = graphics;
+    this.gl = graphics.gl;
+};
 
+
+// vec2
+var vec2 = {};
+
+vec2.create = function(x, y) {
+    var out = new Float32Array(2);
+    out[0] = x || 0;
+    out[1] = y || 0;
+    return out;
+};
+
+vec2.subtract = function(out, a, b) {
+    out[0] = a[0] - b[0];
+    out[1] = a[1] - b[1];
+    return out;
+};
+
+vec2.distance = function(a, b) {
+    var x = b[0] - a[0],
+        y = b[1] - a[1];
+    return Math.sqrt(x*x + y*y);
+};
+
+vec2.length = function (a) {
+    var x = a[0],
+        y = a[1];
+    return Math.sqrt(x*x + y*y);
+};
+
+vec2.dot = function (a, b) {
+    return a[0] * b[0] + a[1] * b[1];
+};
+
+vec2.cross = function(out, a, b) {
+    var z = a[0] * b[1] - a[1] * b[0];
+    out[0] = out[1] = 0;
+    out[2] = z;
+    return out;
+};
+
+vec2.lerp = function (out, a, b, t) {
+    var ax = a[0],
+        ay = a[1];
+    out[0] = ax + t * (b[0] - ax);
+    out[1] = ay + t * (b[1] - ay);
+    return out;
+};
+
+vec2.normalize = function(out, a) {
+    var x = a[0],
+        y = a[1];
+    var len = x*x + y*y;
+    if (len > 0) {
+        len = 1 / Math.sqrt(len);
+        out[0] = a[0] * len;
+        out[1] = a[1] * len;
+    }
+    return out;
+};
+
+vec2.transformMat3 = function(out, a, m) {
+    var x = a[0],
+        y = a[1];
+    out[0] = m[0] * x + m[3] * y + m[6];
+    out[1] = m[1] * x + m[4] * y + m[7];
+    return out;
+};
+
+vec2.forEach = (function() {
+    var vec = vec2.create();
+
+    return function(a, stride, offset, count, fn, arg) {
+        var i, l;
+        if(!stride) {
+            stride = 2;
+        }
+
+        if(!offset) {
+            offset = 0;
+        }
+
+        if(count) {
+            l = Math.min((count * stride) + offset, a.length);
+        } else {
+            l = a.length;
+        }
+
+        for(i = offset; i < l; i += stride) {
+            vec[0] = a[i]; vec[1] = a[i+1];
+            fn(vec, vec, arg);
+            a[i] = vec[0]; a[i+1] = vec[1];
+        }
+
+        return a;
+    };
+})();
+
+//mat3
+
+mat3 = {};
+
+mat3.create = function() {
+    var out = new Float32Array(9);
+    out[0] = 1;
+    out[1] = 0;
+    out[2] = 0;
+    out[3] = 0;
+    out[4] = 1;
+    out[5] = 0;
+    out[6] = 0;
+    out[7] = 0;
+    out[8] = 1;
+    return out;
+};
+
+mat3.ident = mat3.create();
+
+mat3.multiply = function (out, a, b) {
+    var a00 = a[0], a01 = a[1], a02 = a[2],
+        a10 = a[3], a11 = a[4], a12 = a[5],
+        a20 = a[6], a21 = a[7], a22 = a[8],
+
+        b00 = b[0], b01 = b[1], b02 = b[2],
+        b10 = b[3], b11 = b[4], b12 = b[5],
+        b20 = b[6], b21 = b[7], b22 = b[8];
+
+    out[0] = b00 * a00 + b01 * a10 + b02 * a20;
+    out[1] = b00 * a01 + b01 * a11 + b02 * a21;
+    out[2] = b00 * a02 + b01 * a12 + b02 * a22;
+
+    out[3] = b10 * a00 + b11 * a10 + b12 * a20;
+    out[4] = b10 * a01 + b11 * a11 + b12 * a21;
+    out[5] = b10 * a02 + b11 * a12 + b12 * a22;
+
+    out[6] = b20 * a00 + b21 * a10 + b22 * a20;
+    out[7] = b20 * a01 + b21 * a11 + b22 * a21;
+    out[8] = b20 * a02 + b21 * a12 + b22 * a22;
+    return out;
+};
+
+mat3.translate = function(out, a, v) {
+    var a00 = a[0], a01 = a[1], a02 = a[2],
+        a10 = a[3], a11 = a[4], a12 = a[5],
+        a20 = a[6], a21 = a[7], a22 = a[8],
+        x = v[0], y = v[1];
+
+    out[0] = a00;
+    out[1] = a01;
+    out[2] = a02;
+
+    out[3] = a10;
+    out[4] = a11;
+    out[5] = a12;
+
+    out[6] = x * a00 + y * a10 + a20;
+    out[7] = x * a01 + y * a11 + a21;
+    out[8] = x * a02 + y * a12 + a22;
+    return out;
+};
+
+mat3.rotate = function (out, a, rad) {
+    var a00 = a[0], a01 = a[1], a02 = a[2],
+        a10 = a[3], a11 = a[4], a12 = a[5],
+        a20 = a[6], a21 = a[7], a22 = a[8],
+
+        s = Math.sin(rad),
+        c = Math.cos(rad);
+
+    out[0] = c * a00 + s * a10;
+    out[1] = c * a01 + s * a11;
+    out[2] = c * a02 + s * a12;
+
+    out[3] = c * a10 - s * a00;
+    out[4] = c * a11 - s * a01;
+    out[5] = c * a12 - s * a02;
+
+    out[6] = a20;
+    out[7] = a21;
+    out[8] = a22;
+    return out;
+};
+
+mat3.scale = function(out, a, v) {
+    var x = v[0], y = v[1];
+
+    out[0] = x * a[0];
+    out[1] = x * a[1];
+    out[2] = x * a[2];
+
+    out[3] = y * a[3];
+    out[4] = y * a[4];
+    out[5] = y * a[5];
+
+    out[6] = a[6];
+    out[7] = a[7];
+    out[8] = a[8];
+    return out;
+};
+
+EL.EntityManager = function(game) {
+    this.game = game;
+};
+
+EL.Spatial = function() {
+    this.pos = vec2.create();
+    this.scale = vec2.create(2, 2);
+    this.angle = 0;
+    this.origin = vec2.create(100,100);
+
+    this._originTransform = mat3.create();
+    this.transform = mat3.create();
+};
+
+EL.Spatial.prototype.updateTransform = function() {
+    var t = this.transform,
+        ot = this._originTransform;
+
+    mat3.translate(ot, mat3.ident, this.origin);
+
+    mat3.scale(t, ot, this.scale);
+    mat3.translate(t, mat3.ident, this.pos);
+    mat3.rotate(t, t, this.angle);
+
+};
 
 /**
  * Game
@@ -628,7 +860,7 @@ EL.Graphics.ShaderProgram.prototype.attribute = function(name) {
 (function() {
     'use strict';
 
-    var game = new EL.Game(1280, 720, 'c');
+    var game = new EL.Game(1366, 720, 'c');
 
     var main = {
 
@@ -654,16 +886,17 @@ EL.Graphics.ShaderProgram.prototype.attribute = function(name) {
             var vertexShader = new EL.Graphics.Shader(this.graphics);
             vertexShader.fromSource([
                 'attribute vec2 aVertexPosition;',
-                'uniform mat4 uMVMatrix;',
-                'uniform mat4 uPMatrix;',
+                'uniform mat3 uMVMatrix;',
+                'uniform mat3 uPMatrix;',
                 'void main(void) {',
-                '    gl_Position = uMVMatrix * vec4(aVertexPosition, 1.0, 1.0);',
+                '    gl_Position =  vec4((uPMatrix * uMVMatrix * vec3(aVertexPosition, 1)).xy, 1.0, 1.0);',
                 '}'
             ].join(''), 'VERTEX_SHADER');
 
             var mainShader = new EL.Graphics.ShaderProgram(this.graphics);
             mainShader.attach(fragmentShader).attach(vertexShader).link();
             mainShader.uniform('uMVMatrix');
+            mainShader.uniform('uPMatrix');
             mainShader.attribute('aVertexPosition');
 
             this.mainShader = mainShader;
@@ -677,17 +910,19 @@ EL.Graphics.ShaderProgram.prototype.attribute = function(name) {
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
             gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, this.shipIndices, gl.STATIC_DRAW);
 
-            var projectionMatrix = new Float32Array(16);
-            for (var i = 0; i < projectionMatrix.length; i++) {
-                projectionMatrix[i] = +((i % 5) == 0); // uniform matrix
-            }
+            var projectionMatrix = mat3.create();
 
             projectionMatrix[0] = 2 / this.game.width;
-            projectionMatrix[5] = -2 / this.game.height;
-            projectionMatrix[12] = -1;
-            projectionMatrix[13] = 1;
+            projectionMatrix[4] = -2 / this.game.height;
+            projectionMatrix[6] = -1;
+            projectionMatrix[7] = 1;
 
             this.projectionMatrix = projectionMatrix;
+
+            // entities
+            this.ship = new EL.Spatial();
+            this.ship.pos[0] = 100;
+            this.ship.pos[1] = 100;
 
 
             // draw settings
@@ -702,9 +937,11 @@ EL.Graphics.ShaderProgram.prototype.attribute = function(name) {
         },
 
         update: function() {
-            if(this.keyboard.key(EL.Keys.KEY_A)) {
-
+            if(this.keyboard.key(EL.Keys.KEY_LEFT)) {
+                this.ship.angle -= 0.02;
             }
+
+            this.ship.updateTransform();
         },
 
         render: function() {
@@ -717,7 +954,8 @@ EL.Graphics.ShaderProgram.prototype.attribute = function(name) {
             gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
             this.mainShader.use();
 
-            gl.uniformMatrix4fv(this.mainShader.uniforms.uMVMatrix, false, this.projectionMatrix);
+            gl.uniformMatrix3fv(this.mainShader.uniforms.uPMatrix, false, this.projectionMatrix);
+            gl.uniformMatrix3fv(this.mainShader.uniforms.uMVMatrix, false, this.ship.transform);
 
             gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
             gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.shipVerts);
