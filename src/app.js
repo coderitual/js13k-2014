@@ -657,6 +657,12 @@ vec2.multiply = function(out, a, b) {
     return out;
 };
 
+vec2.negate = function(out, a) {
+    out[0] = -a[0];
+    out[1] = -a[1];
+    return out;
+};
+
 vec2.distance = function(a, b) {
     var x = b[0] - a[0],
         y = b[1] - a[1];
@@ -847,7 +853,7 @@ EL.Spatial2d = function() {
     this.pos = vec2.create();
     this.scale = vec2.create(1, 1);
     this.angle = 0;
-    this.origin = vec2.create(-25, -18);
+    this.origin = vec2.create();
 
     this.transform = mat3.create();
 };
@@ -870,6 +876,7 @@ EL.Spatial2d.prototype.update = function() {
 EL.Camera2d = function(game) {
     this.game = game;
     this.pos = vec2.create();
+    this._npos = vec2.create();
     this.zoom = vec2.create(1, 1);
     this.rotation = 0;
     this.center = vec2.create(0, 0);
@@ -890,11 +897,14 @@ EL.Camera2d.prototype.update = function() {
     var v = this.view,
         c = this.center;
 
+    this._npos = vec2.negate(this._npos, this.pos);
+
     // apply transformation (reverse)
-    mat3.translate(v, mat3.ident, this.pos);
-    mat3.rotate(v, v, this.rotate);
+    mat3.translate(v, mat3.ident, this._npos);
+    mat3.rotate(v, v, this.rotation);
     mat3.scale(v, v, this.zoom);
     mat3.translate(v, v, c);
+
 };
 
 
@@ -936,7 +946,7 @@ EL.Camera2d.prototype.update = function() {
                 'uniform mat3 uVMatrix;',
                 'uniform mat3 uPMatrix;',
                 'void main(void) {',
-                '    gl_Position =  vec4((uPMatrix * uMMatrix * vec3(aVertexPosition, 1)).xy, 1.0, 1.0);',
+                '    gl_Position =  vec4((uPMatrix * uVMatrix * uMMatrix * vec3(aVertexPosition, 1)).xy, 1.0, 1.0);',
                 '}'
             ].join(''), 'VERTEX_SHADER');
 
@@ -959,13 +969,17 @@ EL.Camera2d.prototype.update = function() {
             gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, this.shipIndices, gl.STATIC_DRAW);
 
             this.camera = new EL.Camera2d(this.game);
+            this.camera.pos[0] = 0;
+            this.camera.pos[1] = 0;
 
             // entities
             this.ship = new EL.Spatial2d();
-            this.ship.pos[0] = 300;
-            this.ship.pos[1] = 300;
-            this.ship.scale[0] = 3;
-            this.ship.scale[1] = 3;
+            this.ship.pos[0] = 0;
+            this.ship.pos[1] = 0;
+            this.ship.scale[0] = 2;
+            this.ship.scale[1] = 2;
+            this.ship.origin[0] = -25;
+            this.ship.origin[1] = - 18;
 
             this.ship._prevpos = vec2.create();
             this.ship._prevangle = 0;
@@ -1039,7 +1053,7 @@ EL.Camera2d.prototype.update = function() {
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
 
             // draw
-            gl.drawElements(gl.TRIANGLES, this.shipIndices.length, gl.UNSIGNED_SHORT, 0);
+            //gl.drawElements(gl.TRIANGLES, this.shipIndices.length, gl.UNSIGNED_SHORT, 0);
             gl.drawArrays(gl.LINE_LOOP, 0, this.shipVerts.length / 2);
         }
     };
