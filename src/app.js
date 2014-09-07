@@ -645,6 +645,12 @@ vec2.subtract = function(out, a, b) {
     return out;
 };
 
+vec2.multiply = function(out, a, b) {
+    out[0] = a[0] * b[0];
+    out[1] = a[1] * b[1];
+    return out;
+};
+
 vec2.distance = function(a, b) {
     var x = b[0] - a[0],
         y = b[1] - a[1];
@@ -835,22 +841,21 @@ EL.Spatial = function() {
     this.pos = vec2.create();
     this.scale = vec2.create(2, 2);
     this.angle = 0;
-    this.origin = vec2.create(100,100);
+    this.origin = vec2.create(-25, -25);
 
-    this._originTransform = mat3.create();
     this.transform = mat3.create();
 };
 
 EL.Spatial.prototype.updateTransform = function() {
     var t = this.transform,
-        ot = this._originTransform;
+        o = this.origin;
 
-    mat3.translate(ot, mat3.ident, this.origin);
 
-    mat3.scale(t, ot, this.scale);
+    // reverse multiplying
     mat3.translate(t, mat3.ident, this.pos);
     mat3.rotate(t, t, this.angle);
-
+    mat3.scale(t, t, this.scale);
+    mat3.translate(t, t, o);
 };
 
 /**
