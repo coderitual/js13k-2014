@@ -639,6 +639,12 @@ vec2.create = function(x, y) {
     return out;
 };
 
+vec2.copy = function(out, a) {
+    out[0] = a[0];
+    out[1] = a[1];
+    return out;
+};
+
 vec2.subtract = function(out, a, b) {
     out[0] = a[0] - b[0];
     out[1] = a[1] - b[1];
@@ -833,30 +839,65 @@ mat3.scale = function(out, a, v) {
     return out;
 };
 
-EL.EntityManager = function(game) {
-    this.game = game;
-};
-
-EL.Spatial = function() {
+/**
+ * Spatial2d is 2d space transformation component
+ * @constructor
+ */
+EL.Spatial2d = function() {
     this.pos = vec2.create();
-    this.scale = vec2.create(2, 2);
+    this.scale = vec2.create(1, 1);
     this.angle = 0;
-    this.origin = vec2.create(-25, -25);
+    this.origin = vec2.create(-25, -18);
 
     this.transform = mat3.create();
 };
 
-EL.Spatial.prototype.updateTransform = function() {
+EL.Spatial2d.prototype.update = function() {
     var t = this.transform,
         o = this.origin;
 
-
-    // reverse multiplying
+    // apply transformation (reverse)
     mat3.translate(t, mat3.ident, this.pos);
     mat3.rotate(t, t, this.angle);
     mat3.scale(t, t, this.scale);
     mat3.translate(t, t, o);
 };
+
+/**
+ * Camera2d class
+ * @constructor
+ */
+EL.Camera2d = function(game) {
+    this.game = game;
+    this.pos = vec2.create();
+    this.zoom = vec2.create(1, 1);
+    this.rotation = 0;
+    this.center = vec2.create(0, 0);
+
+    this.center[0] = this.game.width / 2;
+    this.center[1] = this.game.height / 2;
+
+    this.view = mat3.create();
+    this.projection = mat3.create();
+
+    this.projection[0] = 2 / this.game.width;
+    this.projection[4] = -2 / this.game.height;
+    this.projection[6] = -1;
+    this.projection[7] = 1;
+};
+
+EL.Camera2d.prototype.update = function() {
+    var v = this.view,
+        c = this.center;
+
+    // apply transformation (reverse)
+    mat3.translate(v, mat3.ident, this.pos);
+    mat3.rotate(v, v, this.rotate);
+    mat3.scale(v, v, this.zoom);
+    mat3.translate(v, v, c);
+};
+
+
 
 /**
  * Game
@@ -877,30 +918,32 @@ EL.Spatial.prototype.updateTransform = function() {
             var gl = this.graphics.gl;
 
             // objects
-            this.shipVerts = new Float32Array([0, 0, 0, 22, 15, 37, 35, 37, 51, 21, 51, 0, 36, 15, 26, 6, 16, 16]);
+            this.shipVerts = new Float32Array([0, 0, 0, 22, 15, 37, 35, 37, 52, 21, 52, 0, 36, 15, 26, 6, 16, 16]);
             this.shipIndices = new Uint16Array(EL.Graphics.Poly.Triangulate(this.shipVerts));
 
             // simple shader
             var fragmentShader = new EL.Graphics.Shader(this.graphics);
             fragmentShader.fromSource([
                 'void main(void) {',
-                '    gl_FragColor = vec4(0.0, 0.0, 0.0, 1);',
+                '    gl_FragColor = vec4(0.39 , 0.61, 0.93, 1);',
                 '}'
             ].join(''), 'FRAGMENT_SHADER');
 
             var vertexShader = new EL.Graphics.Shader(this.graphics);
             vertexShader.fromSource([
                 'attribute vec2 aVertexPosition;',
-                'uniform mat3 uMVMatrix;',
+                'uniform mat3 uMMatrix;',
+                'uniform mat3 uVMatrix;',
                 'uniform mat3 uPMatrix;',
                 'void main(void) {',
-                '    gl_Position =  vec4((uPMatrix * uMVMatrix * vec3(aVertexPosition, 1)).xy, 1.0, 1.0);',
+                '    gl_Position =  vec4((uPMatrix * uMMatrix * vec3(aVertexPosition, 1)).xy, 1.0, 1.0);',
                 '}'
             ].join(''), 'VERTEX_SHADER');
 
             var mainShader = new EL.Graphics.ShaderProgram(this.graphics);
             mainShader.attach(fragmentShader).attach(vertexShader).link();
-            mainShader.uniform('uMVMatrix');
+            mainShader.uniform('uMMatrix');
+            mainShader.uniform('uVMatrix');
             mainShader.uniform('uPMatrix');
             mainShader.attribute('aVertexPosition');
 
@@ -915,19 +958,17 @@ EL.Spatial.prototype.updateTransform = function() {
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
             gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, this.shipIndices, gl.STATIC_DRAW);
 
-            var projectionMatrix = mat3.create();
-
-            projectionMatrix[0] = 2 / this.game.width;
-            projectionMatrix[4] = -2 / this.game.height;
-            projectionMatrix[6] = -1;
-            projectionMatrix[7] = 1;
-
-            this.projectionMatrix = projectionMatrix;
+            this.camera = new EL.Camera2d(this.game);
 
             // entities
-            this.ship = new EL.Spatial();
-            this.ship.pos[0] = 100;
-            this.ship.pos[1] = 100;
+            this.ship = new EL.Spatial2d();
+            this.ship.pos[0] = 300;
+            this.ship.pos[1] = 300;
+            this.ship.scale[0] = 3;
+            this.ship.scale[1] = 3;
+
+            this.ship._prevpos = vec2.create();
+            this.ship._prevangle = 0;
 
 
             // draw settings
@@ -942,25 +983,53 @@ EL.Spatial.prototype.updateTransform = function() {
         },
 
         update: function() {
+
+            vec2.copy(this.ship._prevpos, this.ship.pos);
+            this.ship._prevangle = this.ship.angle;
+
             if(this.keyboard.key(EL.Keys.KEY_LEFT)) {
-                this.ship.angle -= 0.02;
+                this.ship.angle -= 0.1;
             }
 
-            this.ship.updateTransform();
+            if(this.keyboard.key(EL.Keys.KEY_RIGHT)) {
+                this.ship.angle += 0.1;
+            }
+
+            if(this.keyboard.key(EL.Keys.KEY_UP)) {
+                this.ship.pos[0] += Math.cos(this.ship.angle - Math.PI / 2) * 2;
+                this.ship.pos[1] += Math.sin(this.ship.angle - Math.PI / 2) * 2;
+            }
+
+            this.ship.update();
+            this.camera.update();
         },
 
-        render: function() {
+        render: function(alpha) {
+
             var gl = this.game.graphics.gl;
 
+//            var px = this.ship.pos[0];
+//            var py = this.ship.pos[1];
+//            var an = this.ship.angle;
+//
+//            vec2.lerp(this.ship.pos, this.ship._prevpos, this.ship.pos, alpha);
+//            this.ship.angle = this.ship.angle * alpha + this.ship._prevangle * (1 - alpha);
+//
+//            this.ship.angle = an;
+//            this.ship.pos[0] = px;
+//            this.ship.pos[1] = py;
+
             gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-            gl.clearColor(101 / 255, 156 / 255, 239 / 255, 1);  // cornflower blue
+            //gl.clearColor(101 / 255, 156 / 255, 239 / 255, 1);  // cornflower blue
+            gl.clearColor(0.2, 0.2, 0.2, 1);  // cornflower blue
             gl.clear(gl.COLOR_BUFFER_BIT);
 
             gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
             this.mainShader.use();
 
-            gl.uniformMatrix3fv(this.mainShader.uniforms.uPMatrix, false, this.projectionMatrix);
-            gl.uniformMatrix3fv(this.mainShader.uniforms.uMVMatrix, false, this.ship.transform);
+            gl.uniformMatrix3fv(this.mainShader.uniforms.uPMatrix, false, this.camera.projection);
+            gl.uniformMatrix3fv(this.mainShader.uniforms.uVMatrix, false, this.camera.view);
+            gl.uniformMatrix3fv(this.mainShader.uniforms.uMMatrix, false, this.ship.transform);
 
             gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
             gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.shipVerts);
