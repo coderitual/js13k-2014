@@ -1105,7 +1105,7 @@ EL.Camera2d.prototype.update = function() {
             this.camera.update();
             this.cam2.update();
 
-            mat3.multiply(this.ship.transform, this.cam2.transform, this.ship.transform);
+            //mat3.multiply(this.ship.transform, this.cam2.transform, this.ship.transform);
         },
 
         render: function(alpha) {
