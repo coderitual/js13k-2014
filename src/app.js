@@ -659,6 +659,12 @@ vec2.copy = function(out, a) {
     return out;
 };
 
+vec2.add = function(out, a, b) {
+    out[0] = a[0] + b[0];
+    out[1] = a[1] + b[1];
+    return out;
+};
+
 vec2.subtract = function(out, a, b) {
     out[0] = a[0] - b[0];
     out[1] = a[1] - b[1];
@@ -728,11 +734,26 @@ vec2.transformMat3 = function(out, a, m) {
     return out;
 };
 
+vec2.min = function(out, a, b) {
+    out[0] = Math.min(a[0], b[0]);
+    out[1] = Math.min(a[1], b[1]);
+    return out;
+};
+
+vec2.max = function(out, a, b) {
+    out[0] = Math.max(a[0], b[0]);
+    out[1] = Math.max(a[1], b[1]);
+    return out;
+};
+
 vec2.forEach = (function() {
     var vec = vec2.create();
 
-    return function(a, stride, offset, count, fn, arg) {
+    return function(out, a, stride, offset, count, fn, arg) {
         var i, l;
+
+        if(a.length != out.length) return;
+
         if(!stride) {
             stride = 2;
         }
@@ -749,11 +770,11 @@ vec2.forEach = (function() {
 
         for(i = offset; i < l; i += stride) {
             vec[0] = a[i]; vec[1] = a[i+1];
-            fn(vec, vec, arg);
-            a[i] = vec[0]; a[i+1] = vec[1];
+            fn(vec, arg);
+            out[i] = vec[0]; out[i+1] = vec[1];
         }
 
-        return a;
+        return out;
     };
 })();
 
@@ -977,6 +998,74 @@ EL.Camera2d.prototype.update = function() {
 };
 
 /**
+ * AABB Axis Aligned Bounding Box
+ * @constructor
+ */
+EL.AABB = function() {
+    this.min = vec2.create();
+    this.max = vec2.create();
+};
+
+EL.AABB.vsAABB = function(a, b) {
+    // Exit with no intersection if found separated along an axis
+    if(a.max[0] < b.min[0] || a.min[0] > b.max[0]) return false;
+    if(a.max[1] < b.min[1] || a.min[1] > b.max[1]) return false;
+
+    // No separating axis found, therefor there is at least one overlapping axis
+    return true
+};
+
+/**
+ * Polygon2dMesh stores polygon data information
+ * @constructor
+ */
+EL.Polygon2dMesh = function(polyArray) {
+    this.vertices = new Float32Array(polyArray);
+    this.verticesT = new Float32Array(polyArray);
+    this.indices = new Uint16Array(EL.Graphics.Poly.Triangulate(this.vertices));
+
+    this.AABB = new EL.AABB();
+
+    var self = this;
+    this._transformPoint = function(vec, transform) {
+        vec2.transformMat3(vec, vec, transform);
+
+        // calculate AABB
+        vec2.min(self.AABB.min, self.AABB.min, vec);
+        vec2.max(self.AABB.max, self.AABB.max, vec);
+    };
+
+    this.applyTransform(mat3.ident);
+};
+
+EL.Polygon2dMesh.prototype.applyTransform = function(transform) {
+    vec2.forEach(this.verticesT, this.vertices, 0, 0, 0, this._transformPoint, transform);
+};
+
+/**
+ * Body2d physics class
+ * @constructor
+ */
+EL.Body2d = function() {
+    this.pos = vec2.create();
+    this.acc = vec2.create();
+    this.vec = vec2.create();
+
+    this.polygons = [];
+};
+
+EL.Body2d.prototype.addPolygon = function(polygon) {
+    this.polygons.push(polygon);
+};
+
+EL.Body2d.prototype.update = function(transform) {
+    var l = this.polygons.length;
+    while(l--) {
+        this.polygons[l].applyTransform(transform);
+    }
+};
+
+/**
  * Game
  */
 
@@ -995,8 +1084,10 @@ EL.Camera2d.prototype.update = function() {
             var gl = this.graphics.gl;
 
             // objects
-            this.shipVerts = new Float32Array([0, 0, 0, 22, 15, 37, 35, 37, 52, 21, 52, 0, 36, 15, 26, 6, 16, 16]);
-            this.shipIndices = new Uint16Array(EL.Graphics.Poly.Triangulate(this.shipVerts));
+            //this.shipVerts = new Float32Array([0, 0, 0, 22, 15, 37, 35, 37, 52, 21, 52, 0, 36, 15, 26, 6, 16, 16]);
+            //this.shipIndices = new Uint16Array(EL.Graphics.Poly.Triangulate(this.shipVerts));
+
+            this.shipPoly = new EL.Polygon2dMesh([0, 0, 0, 22, 15, 37, 35, 37, 52, 21, 52, 0, 36, 15, 26, 6, 16, 16]);
 
             // simple shader
             var fragmentShader = new EL.Graphics.Shader(this.graphics);
@@ -1013,7 +1104,7 @@ EL.Camera2d.prototype.update = function() {
                 'uniform mat3 uVMatrix;',
                 'uniform mat3 uPMatrix;',
                 'void main(void) {',
-                '    gl_Position =  vec4((uPMatrix * uVMatrix * uMMatrix * vec3(aVertexPosition, 1)).xy, 1.0, 1.0);',
+                '    gl_Position =  vec4((uPMatrix * uVMatrix * vec3(aVertexPosition, 1)).xy, 1.0, 1.0);',
                 '}'
             ].join(''), 'VERTEX_SHADER');
 
@@ -1030,22 +1121,22 @@ EL.Camera2d.prototype.update = function() {
             this.indexBuffer = gl.createBuffer();
 
             gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
-            gl.bufferData(gl.ARRAY_BUFFER, this.shipVerts, gl.DYNAMIC_DRAW);
+            gl.bufferData(gl.ARRAY_BUFFER, this.shipPoly.verticesT, gl.DYNAMIC_DRAW);
 
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
-            gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, this.shipIndices, gl.STATIC_DRAW);
+            gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, this.shipPoly.indices, gl.STATIC_DRAW);
 
             this.keyboard.lock(EL.Keys.KEY_LEFT);
             this.keyboard.lock(EL.Keys.KEY_RIGHT);
             this.keyboard.lock(EL.Keys.KEY_UP);
             this.keyboard.lock(EL.Keys.KEY_DOWN);
 
-            this.camera = new EL.Camera2d(this.game);
-            this.camera.pos[0] = 0;
-            this.camera.pos[1] = 0;
-            this.camera.zoom[0] = 2;
-            this.camera.zoom[1] = 2;
-            this.camera.rotation = 0;
+            var camera = this.camera = new EL.Camera2d(this.game);
+            camera.pos[0] = 0;
+            camera.pos[1] = 0;
+            camera.zoom[0] = 1;
+            camera.zoom[1] = 1;
+            camera.rotation = 0;
             //this.camera.center[0] = 0;
             //this.camera.center[1] = 0;
 
@@ -1067,7 +1158,6 @@ EL.Camera2d.prototype.update = function() {
 
             this.ship._prevpos = vec2.create();
             this.ship._prevangle = 0;
-
 
             // draw settings
             gl.disable(gl.DEPTH_TEST);
@@ -1106,6 +1196,7 @@ EL.Camera2d.prototype.update = function() {
             this.cam2.update();
 
             //mat3.multiply(this.ship.transform, this.cam2.transform, this.ship.transform);
+            this.shipPoly.applyTransform(this.ship.transform);
         },
 
         render: function(alpha) {
@@ -1140,15 +1231,15 @@ EL.Camera2d.prototype.update = function() {
             gl.uniformMatrix3fv(this.mainShader.uniforms.uMMatrix, false, this.ship.transform);
 
             gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
-            gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.shipVerts);
+            gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.shipPoly.verticesT);
             gl.vertexAttribPointer(this.mainShader.attributes.aVertexPosition, 2, gl.FLOAT, false, 0, 0);
 
             // indices
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
 
             // draw
-            //gl.drawElements(gl.TRIANGLES, this.shipIndices.length, gl.UNSIGNED_SHORT, 0);
-            gl.drawArrays(gl.LINE_LOOP, 0, this.shipVerts.length / 2);
+            //gl.drawElements(gl.TRIANGLES, this.shipPoly.indices.length, gl.UNSIGNED_SHORT, 0);
+            gl.drawArrays(gl.LINE_LOOP, 0, this.shipPoly.verticesT.length / 2);
         }
     };
 
