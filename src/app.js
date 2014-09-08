@@ -1043,8 +1043,8 @@ EL.Camera2d.prototype.update = function() {
             this.camera = new EL.Camera2d(this.game);
             this.camera.pos[0] = 0;
             this.camera.pos[1] = 0;
-            this.camera.zoom[0] = 1;
-            this.camera.zoom[1] = 1;
+            this.camera.zoom[0] = 2;
+            this.camera.zoom[1] = 2;
             this.camera.rotation = 0;
             //this.camera.center[0] = 0;
             //this.camera.center[1] = 0;
@@ -1055,12 +1055,10 @@ EL.Camera2d.prototype.update = function() {
             this.cam2.scale[0] = 1;
             this.cam2.scale[1] = 1;
             this.cam2.angle = 0;
-            this.cam2.origin[0] = 0;
-            this.cam2.origin[1] = 0;
 
             // entities
             this.ship = new EL.Spatial2d();
-            this.ship.pos[0] = 100;
+            this.ship.pos[0] = 0;
             this.ship.pos[1] = 0;
             this.ship.scale[0] = 1;
             this.ship.scale[1] = 1;
@@ -1107,7 +1105,7 @@ EL.Camera2d.prototype.update = function() {
             this.camera.update();
             this.cam2.update();
 
-            //mat3.multiply(this.ship.transform, this.cam2.transform, this.ship.transform);
+            mat3.multiply(this.ship.transform, this.cam2.transform, this.ship.transform);
         },
 
         render: function(alpha) {
