@@ -800,6 +800,60 @@ mat3.multiply = function (out, a, b) {
     return out;
 };
 
+mat3.invert = function(out, a) {
+    var a00 = a[0], a01 = a[1], a02 = a[2],
+        a10 = a[3], a11 = a[4], a12 = a[5],
+        a20 = a[6], a21 = a[7], a22 = a[8],
+
+        b01 = a22 * a11 - a12 * a21,
+        b11 = -a22 * a10 + a12 * a20,
+        b21 = a21 * a10 - a11 * a20,
+
+    // Calculate the determinant
+        det = a00 * b01 + a01 * b11 + a02 * b21;
+
+    if (!det) {
+        return null;
+    }
+    det = 1.0 / det;
+
+    out[0] = b01 * det;
+    out[1] = (-a22 * a01 + a02 * a21) * det;
+    out[2] = (a12 * a01 - a02 * a11) * det;
+    out[3] = b11 * det;
+    out[4] = (a22 * a00 - a02 * a20) * det;
+    out[5] = (-a12 * a00 + a02 * a10) * det;
+    out[6] = b21 * det;
+    out[7] = (-a21 * a00 + a01 * a20) * det;
+    out[8] = (a11 * a00 - a01 * a10) * det;
+    return out;
+};
+
+mat3.transpose = function(out, a) {
+    // If we are transposing ourselves we can skip a few steps but have to cache some values
+    if (out === a) {
+        var a01 = a[1], a02 = a[2], a12 = a[5];
+        out[1] = a[3];
+        out[2] = a[6];
+        out[3] = a01;
+        out[5] = a[7];
+        out[6] = a02;
+        out[7] = a12;
+    } else {
+        out[0] = a[0];
+        out[1] = a[3];
+        out[2] = a[6];
+        out[3] = a[1];
+        out[4] = a[4];
+        out[5] = a[7];
+        out[6] = a[2];
+        out[7] = a[5];
+        out[8] = a[8];
+    }
+
+    return out;
+};
+
 mat3.translate = function(out, a, v) {
     var a00 = a[0], a01 = a[1], a02 = a[2],
         a10 = a[3], a11 = a[4], a12 = a[5],
@@ -881,10 +935,6 @@ EL.Spatial2d.prototype.update = function() {
     mat3.scale(t, t, this.scale);
     mat3.rotate(t, t, this.angle);
     mat3.translate(t, t, o);
-//    mat3.translate(t, mat3.ident, o);
-//    mat3.scale(t, t, this.scale);
-//    mat3.rotate(t, t, this.angle);
-//    mat3.translate(t, t, this.pos);
 };
 
 /**
@@ -922,14 +972,7 @@ EL.Camera2d.prototype.update = function() {
     mat3.scale(v, v, this.zoom);
     mat3.rotate(v, v, this.rotation);
     mat3.translate(v, v, this._npos);
-
-//    mat3.translate(v, mat3.ident, this._npos);
-//    mat3.rotate(v, v, this.rotation);
-//    mat3.scale(v, v, this.zoom);
-//    mat3.translate(v, v, c);
 };
-
-
 
 /**
  * Game
@@ -968,7 +1011,7 @@ EL.Camera2d.prototype.update = function() {
                 'uniform mat3 uVMatrix;',
                 'uniform mat3 uPMatrix;',
                 'void main(void) {',
-                '    gl_Position =  vec4((uPMatrix * uMMatrix * vec3(aVertexPosition, 1)).xy, 1.0, 1.0);',
+                '    gl_Position =  vec4((uPMatrix * uVMatrix * uMMatrix * vec3(aVertexPosition, 1)).xy, 1.0, 1.0);',
                 '}'
             ].join(''), 'VERTEX_SHADER');
 
@@ -1001,8 +1044,8 @@ EL.Camera2d.prototype.update = function() {
             this.camera.zoom[0] = 1;
             this.camera.zoom[1] = 1;
             this.camera.rotation = 0;
-            this.camera.center[0] = 0;
-            this.camera.center[1] = 0;
+            //this.camera.center[0] = 0;
+            //this.camera.center[1] = 0;
 
             this.cam2 = new EL.Spatial2d();
             this.cam2.pos[0] = 0;
@@ -1015,8 +1058,8 @@ EL.Camera2d.prototype.update = function() {
 
             // entities
             this.ship = new EL.Spatial2d();
-            this.ship.pos[0] = 100;
-            this.ship.pos[1] = 100;
+            this.ship.pos[0] = 0;
+            this.ship.pos[1] = 0;
             this.ship.scale[0] = 1;
             this.ship.scale[1] = 1;
             this.ship.origin[0] = -25;
