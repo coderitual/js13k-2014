@@ -170,6 +170,7 @@ EL.Mouse.prototype.processMouseUp = function(event) {
 EL.Keyboard = function(game) {
     this.game = game;
     this._keys = [];
+    this._locked = [];
 };
 
 EL.Keyboard.prototype.start = function() {
@@ -184,7 +185,10 @@ EL.Keyboard.prototype.start = function() {
     };
 
     var keysCount = EL.Keys.MAX;
-    while(keysCount--) this._keys.push(false);
+    while(keysCount--) {
+        this._keys.push(false);
+        this._locked.push(false);
+    }
 
     window.addEventListener('keydown', this._onKeyDown, false);
     window.addEventListener('keyup', this._onKeyUp, false);
@@ -194,11 +198,21 @@ EL.Keyboard.prototype.key = function(keycode) {
     return this._keys[keycode]
 };
 
+EL.Keyboard.prototype.lock = function(keycode) {
+    this._locked[keycode] = true;
+};
+
+EL.Keyboard.prototype.unlock = function(keycode) {
+    this._locked[keycode] = false;
+}
+
 EL.Keyboard.prototype.processKeyDown = function(event) {
+    this._locked[event.keyCode] && event.preventDefault();
     this._keys[event.keyCode] = true;
 };
 
 EL.Keyboard.prototype.processKeyUp = function(event) {
+    this._locked[event.keyCode] && event.preventDefault();
     this._keys[event.keyCode] = false;
 };
 
@@ -900,11 +914,10 @@ EL.Camera2d.prototype.update = function() {
     this._npos = vec2.negate(this._npos, this.pos);
 
     // apply transformation (reverse)
-    mat3.translate(v, mat3.ident, this._npos);
+    mat3.translate(v, mat3.ident, c);
     mat3.rotate(v, v, this.rotation);
     mat3.scale(v, v, this.zoom);
-    mat3.translate(v, v, c);
-
+    mat3.translate(v, v, this._npos);
 };
 
 
@@ -968,16 +981,34 @@ EL.Camera2d.prototype.update = function() {
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
             gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, this.shipIndices, gl.STATIC_DRAW);
 
+            this.keyboard.lock(EL.Keys.KEY_LEFT);
+            this.keyboard.lock(EL.Keys.KEY_RIGHT);
+            this.keyboard.lock(EL.Keys.KEY_UP);
+            this.keyboard.lock(EL.Keys.KEY_DOWN);
+
             this.camera = new EL.Camera2d(this.game);
             this.camera.pos[0] = 0;
             this.camera.pos[1] = 0;
+            this.camera.zoom[0] = 1;
+            this.camera.zoom[1] = 1;
+            //this.camera.center[0] = 0;
+            //this.camera.center[1] = 0;
+
+            this.cam2 = new EL.Spatial2d();
+            this.cam2.pos[0] = 0;
+            this.cam2.pos[1] = 0;
+            this.cam2.scale[0] = 1;
+            this.cam2.scale[1] = 1;
+            this.cam2.angle = 0;
+            this.cam2.origin[0] = 0;
+            this.cam2.origin[1] = 0;
 
             // entities
             this.ship = new EL.Spatial2d();
             this.ship.pos[0] = 0;
             this.ship.pos[1] = 0;
-            this.ship.scale[0] = 2;
-            this.ship.scale[1] = 2;
+            this.ship.scale[0] = 1;
+            this.ship.scale[1] = 1;
             this.ship.origin[0] = -25;
             this.ship.origin[1] = - 18;
 
@@ -1014,8 +1045,12 @@ EL.Camera2d.prototype.update = function() {
                 this.ship.pos[1] += Math.sin(this.ship.angle - Math.PI / 2) * 2;
             }
 
+            //vec2.copy(this.camera.pos, this.ship.pos);
             this.ship.update();
             this.camera.update();
+            this.cam2.update();
+
+            //mat3.multiply(this.ship.transform, this.ship.transform, this.cam2.transform);
         },
 
         render: function(alpha) {
@@ -1028,6 +1063,10 @@ EL.Camera2d.prototype.update = function() {
 //
 //            vec2.lerp(this.ship.pos, this.ship._prevpos, this.ship.pos, alpha);
 //            this.ship.angle = this.ship.angle * alpha + this.ship._prevangle * (1 - alpha);
+//
+//            this.ship.update();
+//            this.camera.update();
+//            this.cam2.update();
 //
 //            this.ship.angle = an;
 //            this.ship.pos[0] = px;
