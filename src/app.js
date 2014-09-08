@@ -928,12 +928,11 @@ EL.Spatial2d = function() {
 };
 
 EL.Spatial2d.prototype.update = function() {
-    var t = this.transform,
-        o = this.origin;
+    var t = this.transform;
 
     vec2.negate(this._norigin, this.origin);
 
-    // apply transformation (reverse)
+    // apply transformation for object (translate, scale, rotate, origin)
     mat3.translate(t, mat3.ident, this.pos);
     mat3.scale(t, t, this.scale);
     mat3.rotate(t, t, this.angle);
@@ -970,7 +969,7 @@ EL.Camera2d.prototype.update = function() {
 
     vec2.negate(this._npos, this.pos);
 
-    // apply transformation (reverse)
+    // apply transformation for camera (origin, scale, rotate, translate)
     mat3.translate(v, mat3.ident, c);
     mat3.scale(v, v, this.zoom);
     mat3.rotate(v, v, -this.rotation);
@@ -1044,8 +1043,8 @@ EL.Camera2d.prototype.update = function() {
             this.camera = new EL.Camera2d(this.game);
             this.camera.pos[0] = 0;
             this.camera.pos[1] = 0;
-            this.camera.zoom[0] = 8;
-            this.camera.zoom[1] = 8;
+            this.camera.zoom[0] = 1;
+            this.camera.zoom[1] = 1;
             this.camera.rotation = 0;
             //this.camera.center[0] = 0;
             //this.camera.center[1] = 0;
@@ -1061,7 +1060,7 @@ EL.Camera2d.prototype.update = function() {
 
             // entities
             this.ship = new EL.Spatial2d();
-            this.ship.pos[0] = 0;
+            this.ship.pos[0] = 100;
             this.ship.pos[1] = 0;
             this.ship.scale[0] = 1;
             this.ship.scale[1] = 1;
@@ -1101,14 +1100,14 @@ EL.Camera2d.prototype.update = function() {
                 this.ship.pos[1] += Math.sin(this.ship.angle - Math.PI / 2) * 2;
             }
 
-            this.camera.rotation += 0.01;
-
+            //this.camera.rotation = this.ship.angle;
             //vec2.copy(this.camera.pos, this.ship.pos);
+
             this.ship.update();
             this.camera.update();
             this.cam2.update();
 
-            //mat3.multiply(this.ship.transform, this.ship.transform, this.cam2.transform);
+            //mat3.multiply(this.ship.transform, this.cam2.transform, this.ship.transform);
         },
 
         render: function(alpha) {
@@ -1150,7 +1149,7 @@ EL.Camera2d.prototype.update = function() {
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
 
             // draw
-            gl.drawElements(gl.TRIANGLES, this.shipIndices.length, gl.UNSIGNED_SHORT, 0);
+            //gl.drawElements(gl.TRIANGLES, this.shipIndices.length, gl.UNSIGNED_SHORT, 0);
             gl.drawArrays(gl.LINE_LOOP, 0, this.shipVerts.length / 2);
         }
     };
