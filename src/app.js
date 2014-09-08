@@ -878,9 +878,13 @@ EL.Spatial2d.prototype.update = function() {
 
     // apply transformation (reverse)
     mat3.translate(t, mat3.ident, this.pos);
-    mat3.rotate(t, t, this.angle);
     mat3.scale(t, t, this.scale);
+    mat3.rotate(t, t, this.angle);
     mat3.translate(t, t, o);
+//    mat3.translate(t, mat3.ident, o);
+//    mat3.scale(t, t, this.scale);
+//    mat3.rotate(t, t, this.angle);
+//    mat3.translate(t, t, this.pos);
 };
 
 /**
@@ -915,9 +919,14 @@ EL.Camera2d.prototype.update = function() {
 
     // apply transformation (reverse)
     mat3.translate(v, mat3.ident, c);
-    mat3.rotate(v, v, this.rotation);
     mat3.scale(v, v, this.zoom);
+    mat3.rotate(v, v, this.rotation);
     mat3.translate(v, v, this._npos);
+
+//    mat3.translate(v, mat3.ident, this._npos);
+//    mat3.rotate(v, v, this.rotation);
+//    mat3.scale(v, v, this.zoom);
+//    mat3.translate(v, v, c);
 };
 
 
@@ -959,7 +968,7 @@ EL.Camera2d.prototype.update = function() {
                 'uniform mat3 uVMatrix;',
                 'uniform mat3 uPMatrix;',
                 'void main(void) {',
-                '    gl_Position =  vec4((uPMatrix * uVMatrix * uMMatrix * vec3(aVertexPosition, 1)).xy, 1.0, 1.0);',
+                '    gl_Position =  vec4((uPMatrix * uMMatrix * vec3(aVertexPosition, 1)).xy, 1.0, 1.0);',
                 '}'
             ].join(''), 'VERTEX_SHADER');
 
@@ -991,8 +1000,9 @@ EL.Camera2d.prototype.update = function() {
             this.camera.pos[1] = 0;
             this.camera.zoom[0] = 1;
             this.camera.zoom[1] = 1;
-            //this.camera.center[0] = 0;
-            //this.camera.center[1] = 0;
+            this.camera.rotation = 0;
+            this.camera.center[0] = 0;
+            this.camera.center[1] = 0;
 
             this.cam2 = new EL.Spatial2d();
             this.cam2.pos[0] = 0;
@@ -1005,8 +1015,8 @@ EL.Camera2d.prototype.update = function() {
 
             // entities
             this.ship = new EL.Spatial2d();
-            this.ship.pos[0] = 0;
-            this.ship.pos[1] = 0;
+            this.ship.pos[0] = 100;
+            this.ship.pos[1] = 100;
             this.ship.scale[0] = 1;
             this.ship.scale[1] = 1;
             this.ship.origin[0] = -25;
