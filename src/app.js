@@ -922,6 +922,7 @@ EL.Spatial2d = function() {
     this.scale = vec2.create(1, 1);
     this.angle = 0;
     this.origin = vec2.create();
+    this._norigin = vec2.create();
 
     this.transform = mat3.create();
 };
@@ -930,11 +931,13 @@ EL.Spatial2d.prototype.update = function() {
     var t = this.transform,
         o = this.origin;
 
+    vec2.negate(this._norigin, this.origin);
+
     // apply transformation (reverse)
     mat3.translate(t, mat3.ident, this.pos);
     mat3.scale(t, t, this.scale);
     mat3.rotate(t, t, this.angle);
-    mat3.translate(t, t, o);
+    mat3.translate(t, t, this._norigin);
 };
 
 /**
@@ -965,12 +968,12 @@ EL.Camera2d.prototype.update = function() {
     var v = this.view,
         c = this.center;
 
-    this._npos = vec2.negate(this._npos, this.pos);
+    vec2.negate(this._npos, this.pos);
 
     // apply transformation (reverse)
     mat3.translate(v, mat3.ident, c);
     mat3.scale(v, v, this.zoom);
-    mat3.rotate(v, v, this.rotation);
+    mat3.rotate(v, v, -this.rotation);
     mat3.translate(v, v, this._npos);
 };
 
@@ -1041,8 +1044,8 @@ EL.Camera2d.prototype.update = function() {
             this.camera = new EL.Camera2d(this.game);
             this.camera.pos[0] = 0;
             this.camera.pos[1] = 0;
-            this.camera.zoom[0] = 1;
-            this.camera.zoom[1] = 1;
+            this.camera.zoom[0] = 8;
+            this.camera.zoom[1] = 8;
             this.camera.rotation = 0;
             //this.camera.center[0] = 0;
             //this.camera.center[1] = 0;
@@ -1062,8 +1065,8 @@ EL.Camera2d.prototype.update = function() {
             this.ship.pos[1] = 0;
             this.ship.scale[0] = 1;
             this.ship.scale[1] = 1;
-            this.ship.origin[0] = -25;
-            this.ship.origin[1] = - 18;
+            this.ship.origin[0] = 25;
+            this.ship.origin[1] = 18;
 
             this.ship._prevpos = vec2.create();
             this.ship._prevangle = 0;
@@ -1097,6 +1100,8 @@ EL.Camera2d.prototype.update = function() {
                 this.ship.pos[0] += Math.cos(this.ship.angle - Math.PI / 2) * 2;
                 this.ship.pos[1] += Math.sin(this.ship.angle - Math.PI / 2) * 2;
             }
+
+            this.camera.rotation += 0.01;
 
             //vec2.copy(this.camera.pos, this.ship.pos);
             this.ship.update();
@@ -1145,7 +1150,7 @@ EL.Camera2d.prototype.update = function() {
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
 
             // draw
-            //gl.drawElements(gl.TRIANGLES, this.shipIndices.length, gl.UNSIGNED_SHORT, 0);
+            gl.drawElements(gl.TRIANGLES, this.shipIndices.length, gl.UNSIGNED_SHORT, 0);
             gl.drawArrays(gl.LINE_LOOP, 0, this.shipVerts.length / 2);
         }
     };
