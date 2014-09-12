@@ -11,14 +11,14 @@
 var EL = {};
 
 /**
- * RequestAnimationFrame helper service
+ * RequestAnimationFrame helper service (with fixed time step for physics)
  * @param game
  * @constructor
  */
 
 EL.RAF = function(game) {
     this.game = game;
-    this.timeStep = 1/60;
+    this.timeStep = 1/120;
 
     this._lastCall = null;
     this._accum = 0;
@@ -80,12 +80,16 @@ EL.RAF.prototype.update = function() {
  */
 EL.Graphics = function(game) {
     this.game = game;
+    this.canvas = game.canvas;
 };
 
 EL.Graphics.prototype.boot = function() {
 
-    this.gl = null;
-    var canvas = this.game.canvas;
+    var gl = this.gl,
+        canvas = this.canvas,
+        self = this;
+
+    gl = null;
 
     try {
         this.gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
@@ -392,6 +396,7 @@ EL.Game = function(width, height, parentId) {
 
     this.width = width;
     this.height = height;
+    this.ratio = 0;
 
     this.parentId = parentId;
 
@@ -406,6 +411,10 @@ EL.Game = function(width, height, parentId) {
     var self = this;
     this._onBoot = function() {
         self.boot();
+    };
+
+    this._onResize = function(event) {
+        self.processWindowResize(event);
     };
 
     window.addEventListener('load', this._onBoot, false);
@@ -426,15 +435,16 @@ EL.Game.prototype.boot = function() {
     }
 
     window.removeEventListener('load', this._onBoot);
+    window.addEventListener('resize', this._onResize);
 
     // create canvas element
-    this.parent = document.getElementById(this.parentId);
     this.canvas = document.createElement('canvas');
     this.canvas.width = this.width;
     this.canvas.height = this.height;
     this.canvas.style.display = 'block';
-   // this.canvas.style.width = '100%';
-   // this.canvas.style.height = '100%';
+
+    // add to parent (vertically aligned, like it wide)
+    this.parent = document.getElementById(this.parentId);
     this.parent.appendChild(this.canvas);
 
     // game core services
@@ -449,6 +459,14 @@ EL.Game.prototype.boot = function() {
     this.isRunning = true;
     this.raf = new EL.RAF(this);
     this.raf.start();
+};
+
+EL.Game.prototype.processWindowResize = function(event) {
+
+    this.ratio = Math.min(window.innerWidth / this.width, window.innerHeight / this.height);
+
+    this.canvas.style.width = (this.canvas.width * this.ratio) + 'px';
+    this.canvas.style.height = (this.canvas.height * this.ratio) + 'px';
 };
 
 /**
@@ -643,7 +661,7 @@ EL.Graphics.RenderTarget = function(graphics) {
 };
 
 
-// vec2
+// Vector 2d (from glMatrix)
 var vec2 = {};
 
 vec2.create = function(x, y) {
@@ -778,7 +796,7 @@ vec2.forEach = (function() {
     };
 })();
 
-//mat3
+// Matrix3x3 (from glMatrix)
 
 mat3 = {};
 
@@ -1194,7 +1212,7 @@ function testPolygonPolygon(a, b, response) {
 (function() {
     'use strict';
 
-    var game = new EL.Game(1366, 720, 'c');
+    var game = new EL.Game(1600, 700, 'c');
 
     var main = {
 
@@ -1256,8 +1274,8 @@ function testPolygonPolygon(a, b, response) {
             var camera = this.camera = new EL.Camera2d(this.game);
             camera.pos[0] = 0;
             camera.pos[1] = 0;
-            camera.zoom[0] = 1;
-            camera.zoom[1] = 1;
+            camera.zoom[0] = 2;
+            camera.zoom[1] = 2;
             camera.rotation = 0;
             //this.camera.center[0] = 0;
             //this.camera.center[1] = 0;
@@ -1298,19 +1316,21 @@ function testPolygonPolygon(a, b, response) {
             this.ship._prevangle = this.ship.angle;
 
             if(this.keyboard.key(EL.Keys.KEY_LEFT)) {
-                this.ship.angle -= 0.1;
+                this.ship.angle -= 0.04;
             }
 
             if(this.keyboard.key(EL.Keys.KEY_RIGHT)) {
-                this.ship.angle += 0.1;
+                this.ship.angle += 0.04;
             }
 
             if(this.keyboard.key(EL.Keys.KEY_UP)) {
-                this.ship.pos[0] += Math.cos(this.ship.angle - Math.PI / 2) * 2;
-                this.ship.pos[1] += Math.sin(this.ship.angle - Math.PI / 2) * 2;
+                this.ship.pos[0] += Math.cos(this.ship.angle - Math.PI / 2) * 3;
+                this.ship.pos[1] += Math.sin(this.ship.angle - Math.PI / 2) * 3;
             }
 
-            //this.camera.rotation = this.ship.angle;
+//            this.camera.zoom[0] += 0.02;
+//            this.camera.zoom[1] += 0.01;
+//            this.camera.rotation += 0.03;
             //vec2.copy(this.camera.pos, this.ship.pos);
 
             this.ship.update();
@@ -1325,23 +1345,25 @@ function testPolygonPolygon(a, b, response) {
 
             var gl = this.game.graphics.gl;
 
-//            var px = this.ship.pos[0];
-//            var py = this.ship.pos[1];
-//            var an = this.ship.angle;
-//
-//            vec2.lerp(this.ship.pos, this.ship._prevpos, this.ship.pos, alpha);
-//            this.ship.angle = this.ship.angle * alpha + this.ship._prevangle * (1 - alpha);
-//
-//            this.ship.update();
-//            this.camera.update();
-//            this.cam2.update();
-//
-//            this.ship.angle = an;
-//            this.ship.pos[0] = px;
-//            this.ship.pos[1] = py;
+            var px = this.ship.pos[0];
+            var py = this.ship.pos[1];
+            var an = this.ship.angle;
+
+            vec2.lerp(this.ship.pos, this.ship._prevpos, this.ship.pos, alpha);
+            this.ship.angle = this.ship.angle * alpha + this.ship._prevangle * (1 - alpha);
+
+            this.ship.update();
+            this.camera.update();
+            this.cam2.update();
+            this.shipPoly.applyTransform(this.ship.transform);
+
+            this.ship.angle = an;
+            this.ship.pos[0] = px;
+            this.ship.pos[1] = py;
 
             gl.bindFramebuffer(gl.FRAMEBUFFER, null);
             //gl.clearColor(101 / 255, 156 / 255, 239 / 255, 1);  // cornflower blue
+//            gl.clearColor(0.2, 0.2, 0.2, 1);  // cornflower blue
             gl.clearColor(0.2, 0.2, 0.2, 1);  // cornflower blue
             gl.clear(gl.COLOR_BUFFER_BIT);
 
