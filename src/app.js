@@ -700,6 +700,12 @@ vec2.multiply = function(out, a, b) {
     return out;
 };
 
+vec2.scale = function(out, a, b) {
+    out[0] = a[0] * b;
+    out[1] = a[1] * b;
+    return out;
+};
+
 vec2.negate = function(out, a) {
     out[0] = -a[0];
     out[1] = -a[1];
@@ -1293,6 +1299,10 @@ function testPolygonPolygon(a, b, response) {
             this.mapModel.load([0, 0, 199, 32, 348, 13, 385, 162, 349, 190, 349, 257, 292, 318, 316, 384, 320, 458, 242, 496, 228, 524, 170, 519, 164, 402, 74, 326, 67, 252, 32, 183, 28, 139, -40, 84]);
             this.mapModel.color(0.7, 0.33, 0.5, 1);
 
+            this.map2Model = new EL.Graphics.Mesh2d(this.graphics);
+            this.map2Model.load([0, 0, -15, 168, 48, 348, 171, 410, 312, 235, 202, 74]);
+            this.map2Model.color(0.6, 0.6, 0.3, 1);
+
             // simple shader
             var fragmentShader = new EL.Graphics.Shader(this.graphics);
             fragmentShader.fromSource([
@@ -1335,8 +1345,8 @@ function testPolygonPolygon(a, b, response) {
             var camera = this.camera = new EL.Camera2d(this.game);
             camera.pos[0] = 0;
             camera.pos[1] = 0;
-            camera.zoom[0] = 1;
-            camera.zoom[1] = 1;
+            camera.zoom[0] = 4;
+            camera.zoom[1] = 4;
             camera.rotation = 0;
             //this.camera.center[0] = 0;
             //this.camera.center[1] = 0;
@@ -1356,14 +1366,28 @@ function testPolygonPolygon(a, b, response) {
             this.ship.scale[1] = 1;
             this.ship.origin[0] = 25;
             this.ship.origin[1] = 18;
+            this.ship.acc = vec2.create();
+            this.ship.vel = vec2.create();
+            this.ship.velMax = vec2.create();
+            this.ship.angleAcc = 0;
+            this.ship.angleVel = 0;
+            this.ship.angleVelMax = 0;
 
             this.map = new EL.Spatial2d();
-            this.map.pos[0] = 0;
-            this.map.pos[1] = 0;
+            this.map.pos[0] = 400;
+            this.map.pos[1] = 100;
             this.map.scale[0] = 1;
             this.map.scale[1] = 1;
             this.map.origin[0] = this.mapModel.AABB.max[0] - this.mapModel.AABB.min[0];
             this.map.origin[1] = this.mapModel.AABB.max[1] - this.mapModel.AABB.min[1];
+
+            this.map2 = new EL.Spatial2d();
+            this.map2.pos[0] = -200;
+            this.map2.pos[1] = 0;
+            this.map2.scale[0] = 1;
+            this.map2.scale[1] = 1;
+            this.map2.origin[0] = this.map2Model.AABB.max[0] - this.map2Model.AABB.min[0];
+            this.map2.origin[1] = this.map2Model.AABB.max[1] - this.map2Model.AABB.min[1];
 
             this.ship._prevpos = vec2.create();
             this.ship._prevangle = 0;
@@ -1384,30 +1408,51 @@ function testPolygonPolygon(a, b, response) {
             vec2.copy(this.ship._prevpos, this.ship.pos);
             this.ship._prevangle = this.ship.angle;
 
+            this.ship.angleAcc = -0;
             if(this.keyboard.key(EL.Keys.KEY_LEFT)) {
-                this.ship.angle -= 0.02;
+                this.ship.angleAcc = -0.0012;
             }
 
             if(this.keyboard.key(EL.Keys.KEY_RIGHT)) {
-                this.ship.angle += 0.02;
+                this.ship.angleAcc = 0.0012;
             }
 
+            this.ship.acc[0] = 0;
+            this.ship.acc[1] = 0;
             if(this.keyboard.key(EL.Keys.KEY_UP)) {
-                this.ship.pos[0] += Math.cos(this.ship.angle - Math.PI / 2) * 3;
-                this.ship.pos[1] += Math.sin(this.ship.angle - Math.PI / 2) * 3;
+                this.ship.acc[0] = Math.cos(this.ship.angle - Math.PI / 2) * 0.02;
+                this.ship.acc[1] = Math.sin(this.ship.angle - Math.PI / 2) * 0.02;
             }
+
+            vec2.add(this.ship.vel, this.ship.vel, this.ship.acc);
+            //vec2.min(this.ship.vel, this.ship.vel, this.ship.velMax);
+
+            this.ship.angleVel += this.ship.angleAcc;
+            this.ship.angleVel += -(this.ship.angleVel * 0.03);
+            vec2.scale(this.ship.vel, this.ship.vel, 0.99);
+
+            vec2.add(this.ship.pos, this.ship.pos, this.ship.vel);
+            this.ship.angle += this.ship.angleVel;
 
 //            this.camera.zoom[0] += 0.02;
 //            this.camera.zoom[1] += 0.01;
 //            this.camera.rotation += 0.03;
             vec2.copy(this.camera.pos, this.ship.pos);
 
+            this.camera.zoom[0] = 1 / Math.max(1 + vec2.length(this.ship.vel) * 0.1, 1);
+            this.camera.zoom[1] = 1 / Math.max(1 + vec2.length(this.ship.vel) * 0.1, 1);
+            //this.camera.rotation = this.ship.angle;
+
             this.ship.update();
+            this.map.update();
+            this.map2.update();
             this.camera.update();
             this.cam2.update();
 
             //mat3.multiply(this.ship.transform, this.cam2.transform, this.ship.transform);
             this.shipPoly.applyTransform(this.ship.transform);
+            this.mapModel.applyTransform(this.map.transform);
+            this.map2Model.applyTransform(this.map2.transform);
         },
 
         render: function(alpha) {
@@ -1453,13 +1498,9 @@ function testPolygonPolygon(a, b, response) {
             // draw
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.shipPoly.indexBuffer);
             gl.drawElements(gl.TRIANGLES, this.shipPoly.indices.length, gl.UNSIGNED_SHORT, 0);
-
             gl.drawArrays(gl.LINE_LOOP, 0, this.shipPoly.verticesT.length / 2);
 
-            gl.drawArrays(gl.LINE_LOOP, 0, this.mapModel.verticesT.length / 2);
 
-            gl.uniformMatrix3fv(this.mainShader.uniforms.uPMatrix, false, this.camera.projection);
-            gl.uniformMatrix3fv(this.mainShader.uniforms.uVMatrix, false, this.camera.view);
             gl.uniformMatrix3fv(this.mainShader.uniforms.uMMatrix, false, this.map.transform);
 
             gl.bindBuffer(gl.ARRAY_BUFFER, this.mapModel.vertexBuffer);
@@ -1473,8 +1514,22 @@ function testPolygonPolygon(a, b, response) {
             // draw
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.mapModel.indexBuffer);
             gl.drawElements(gl.TRIANGLES, this.mapModel.indices.length, gl.UNSIGNED_SHORT, 0);
-
             gl.drawArrays(gl.LINE_LOOP, 0, this.mapModel.verticesT.length / 2);
+
+
+            gl.uniformMatrix3fv(this.mainShader.uniforms.uMMatrix, false, this.map2.transform);
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.map2Model.vertexBuffer);
+            gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.map2Model.verticesT);
+            gl.vertexAttribPointer(this.mainShader.attributes.aVertexPosition, 2, gl.FLOAT, false, 0, 0);
+
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.map2Model.colorBuffer);
+            gl.bufferSubData(gl.ARRAY_BUFFER,0 , this.map2Model.colors);
+            gl.vertexAttribPointer(this.mainShader.attributes.aVertexColor, 4, gl.FLOAT, false, 0, 0);
+
+            // draw
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.map2Model.indexBuffer);
+            gl.drawElements(gl.TRIANGLES, this.map2Model.indices.length, gl.UNSIGNED_SHORT, 0);
+            gl.drawArrays(gl.LINE_LOOP, 0, this.map2Model.verticesT.length / 2);
         }
     };
 
