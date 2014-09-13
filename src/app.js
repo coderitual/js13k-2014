@@ -413,8 +413,8 @@ EL.Game = function(width, height, parentId) {
         self.boot();
     };
 
-    this._onResize = function(event) {
-        self.processWindowResize(event);
+    this._onResize = function() {
+        self.updateCanvas();
     };
 
     window.addEventListener('load', this._onBoot, false);
@@ -446,6 +446,7 @@ EL.Game.prototype.boot = function() {
     // add to parent (vertically aligned, like it wide)
     this.parent = document.getElementById(this.parentId);
     this.parent.appendChild(this.canvas);
+    this.updateCanvas();
 
     // game core services
     this.graphics = new EL.Graphics(this);
@@ -461,10 +462,8 @@ EL.Game.prototype.boot = function() {
     this.raf.start();
 };
 
-EL.Game.prototype.processWindowResize = function(event) {
-
+EL.Game.prototype.updateCanvas = function() {
     this.ratio = Math.min(window.innerWidth / this.width, window.innerHeight / this.height);
-
     this.canvas.style.width = (this.canvas.width * this.ratio) + 'px';
     this.canvas.style.height = (this.canvas.height * this.ratio) + 'px';
 };
@@ -677,6 +676,12 @@ vec2.copy = function(out, a) {
     return out;
 };
 
+vec2.set = function(out, x, y) {
+    out[0] = x;
+    out[1] = y;
+    return out;
+};
+
 vec2.add = function(out, a, b) {
     out[0] = a[0] + b[0];
     out[1] = a[1] + b[1];
@@ -698,6 +703,14 @@ vec2.multiply = function(out, a, b) {
 vec2.negate = function(out, a) {
     out[0] = -a[0];
     out[1] = -a[1];
+    return out;
+};
+
+vec2.perp = function(out, a) {
+    var x = a[0],
+        y = a[1];
+    out[0] = a[1];
+    out[1] = -a[0];
     return out;
 };
 
@@ -1034,13 +1047,21 @@ EL.AABB.vsAABB = function(a, b) {
 };
 
 /**
- * Polygon2dMesh stores polygon data information
+ * Mesh2d stores 2d mesh polygon data information
  * @constructor
  */
-EL.Polygon2dMesh = function(polyArray) {
-    this.vertices = new Float32Array(polyArray);
-    this.verticesT = new Float32Array(polyArray);
-    this.indices = new Uint16Array(EL.Graphics.Poly.Triangulate(this.vertices));
+EL.Graphics.Mesh2d = function(graphics) {
+    this.graphics = graphics;
+    this.gl = graphics.gl;
+
+    this.vertices = null;
+    this.verticesT = null;
+    this.indices = null;
+    this.colors = null;
+
+    this.colorBuffer = this.gl.createBuffer();
+    this.vertexBuffer = this.gl.createBuffer();
+    this.indexBuffer = this.gl.createBuffer();
 
     this.AABB = new EL.AABB();
 
@@ -1052,11 +1073,41 @@ EL.Polygon2dMesh = function(polyArray) {
         vec2.min(self.AABB.min, self.AABB.min, vec);
         vec2.max(self.AABB.max, self.AABB.max, vec);
     };
+};
+
+EL.Graphics.Mesh2d.prototype.load = function(data) {
+    this.vertices = new Float32Array(data);
+    this.verticesT = new Float32Array(data);
+    this.indices = new Uint16Array(EL.Graphics.Poly.Triangulate(this.vertices));
+    this.colors = new Float32Array(data.length * 2);
+
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.colorBuffer);
+    this.gl.bufferData(this.gl.ARRAY_BUFFER, this.colors, this.gl.STATIC_DRAW);
+
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vertexBuffer);
+    this.gl.bufferData(this.gl.ARRAY_BUFFER, this.verticesT, this.gl.DYNAMIC_DRAW);
+
+    this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
+    this.gl.bufferData(this.gl.ELEMENT_ARRAY_BUFFER, this.indices, this.gl.STATIC_DRAW);
 
     this.applyTransform(mat3.ident);
 };
 
-EL.Polygon2dMesh.prototype.applyTransform = function(transform) {
+EL.Graphics.Mesh2d.prototype.color = function(r, g, b, a) {
+
+    if(this.colors == null) {
+        return;
+    }
+
+    for(var i = 0, l = this.colors.length; i < l; i+=4) {
+        this.colors[i] = r;
+        this.colors[i + 1] = g;
+        this.colors[i + 2] = b;
+        this.colors[i + 3] = a;
+    }
+};
+
+EL.Graphics.Mesh2d.prototype.applyTransform = function(transform) {
     vec2.forEach(this.verticesT, this.vertices, 0, 0, 0, this._transformPoint, transform);
 };
 
@@ -1099,25 +1150,37 @@ EL.Contact2d.prototype.clear = function() {
     this.overlap = Number.MAX_VALUE;
 };
 
-function flattenPointsOn(points, normal, result) {
+EL.SAT = {};
+EL.SAT._tvec = [
+    vec2.create(),
+    vec2.create(),
+    vec2.create(),
+    vec2.create()
+];
+
+EL.SAT.flattenPointsOn = function(points, normal, result) {
     var min = Number.MAX_VALUE;
     var max = -Number.MAX_VALUE;
-    var len = points.length;
-    for (var i = 0; i < len; i++ ) {
+    var len = points.length / 2;
+
+    for (var i = 0; i < len; i+= 2) {
         // The magnitude of the projection of the point onto the normal
-        var dot = points[i].dot(normal);
+        var dot = vec2.dot(vec2.set(EL.SAT._tvec[0], points[i], points[i + 1]), normal);
         if (dot < min) { min = dot; }
         if (dot > max) { max = dot; }
     }
-    result[0] = min; result[1] = max;
-}
 
-function isSeparatingAxis(aPos, bPos, aPoints, bPoints, axis, response) {
-    var rangeA = T_ARRAYS.pop();
-    var rangeB = T_ARRAYS.pop();
+    result[0] = min;
+    result[1] = max;
+};
+
+EL.SAT.isSeparatingAxis = function(aPos, bPos, aPoints, bPoints, axis, response) {
+    var rangeA = EL.SAT._tvec[1];
+    var rangeB = EL.SAT._tvec[2];
     // The magnitude of the offset between the two polygons
-    var offsetV = T_VECTORS.pop().copy(bPos).sub(aPos);
-    var projectedOffset = offsetV.dot(axis);
+
+    var offsetV = vec2.subtract(EL.SAT._tvec[3], bPos, aPos);
+    var projectedOffset = vec2.dot(offsetV, axis);
     // Project the polygons onto the axis.
     flattenPointsOn(aPoints, axis, rangeA);
     flattenPointsOn(bPoints, axis, rangeB);
@@ -1126,9 +1189,6 @@ function isSeparatingAxis(aPos, bPos, aPoints, bPoints, axis, response) {
     rangeB[1] += projectedOffset;
     // Check if there is a gap. If there is, this is a separating axis and we can stop
     if (rangeA[0] > rangeB[1] || rangeB[0] > rangeA[1]) {
-        T_VECTORS.push(offsetV);
-        T_ARRAYS.push(rangeA);
-        T_ARRAYS.push(rangeB);
         return true;
     }
     // This is not a separating axis. If we're calculating a response, calculate the overlap.
@@ -1136,11 +1196,11 @@ function isSeparatingAxis(aPos, bPos, aPoints, bPoints, axis, response) {
         var overlap = 0;
         // A starts further left than B
         if (rangeA[0] < rangeB[0]) {
-            response['aInB'] = false;
+            response.aInB = false;
             // A ends before B does. We have to pull A out of B
             if (rangeA[1] < rangeB[1]) {
                 overlap = rangeA[1] - rangeB[0];
-                response['bInA'] = false;
+                response.bInA = false;
                 // B is fully inside A.  Pick the shortest way out.
             } else {
                 var option1 = rangeA[1] - rangeB[0];
@@ -1149,11 +1209,11 @@ function isSeparatingAxis(aPos, bPos, aPoints, bPoints, axis, response) {
             }
             // B starts further left than A
         } else {
-            response['bInA'] = false;
+            response.bInA = false;
             // B ends before A ends. We have to push A out of B
             if (rangeA[1] > rangeB[1]) {
                 overlap = rangeA[0] - rangeB[1];
-                response['aInB'] = false;
+                response.aInB = false;
                 // A is fully inside B.  Pick the shortest way out.
             } else {
                 var option1 = rangeA[1] - rangeB[0];
@@ -1163,34 +1223,32 @@ function isSeparatingAxis(aPos, bPos, aPoints, bPoints, axis, response) {
         }
         // If this is the smallest amount of overlap we've seen so far, set it as the minimum overlap.
         var absOverlap = Math.abs(overlap);
-        if (absOverlap < response['overlap']) {
-            response['overlap'] = absOverlap;
-            response['overlapN'].copy(axis);
+        if (absOverlap < response.overlap) {
+            response.overlap = absOverlap;
+            response.overlapN.copy(axis);
             if (overlap < 0) {
-                response['overlapN'].reverse();
+                response.overlapN.reverse();
             }
         }
     }
-    T_VECTORS.push(offsetV);
-    T_ARRAYS.push(rangeA);
-    T_ARRAYS.push(rangeB);
+
     return false;
 }
 
 function testPolygonPolygon(a, b, response) {
-    var aPoints = a['calcPoints'];
+    var aPoints = a.calcPoints;
     var aLen = aPoints.length;
-    var bPoints = b['calcPoints'];
+    var bPoints = b.calcPoints;
     var bLen = bPoints.length;
     // If any of the edge normals of A is a separating axis, no intersection.
     for (var i = 0; i < aLen; i++) {
-        if (isSeparatingAxis(a['pos'], b['pos'], aPoints, bPoints, a['normals'][i], response)) {
+        if (isSeparatingAxis(a.pos, b.pos, aPoints, bPoints, a.normals[i], response)) {
             return false;
         }
     }
     // If any of the edge normals of B is a separating axis, no intersection.
     for (var i = 0;i < bLen; i++) {
-        if (isSeparatingAxis(a['pos'], b['pos'], aPoints, bPoints, b['normals'][i], response)) {
+        if (isSeparatingAxis(a.pos, b.pos, aPoints, bPoints, b.normals[i], response)) {
             return false;
         }
     }
@@ -1198,9 +1256,9 @@ function testPolygonPolygon(a, b, response) {
     // and we've already calculated the smallest overlap (in isSeparatingAxis).  Calculate the
     // final overlap vector.
     if (response) {
-        response['a'] = a;
-        response['b'] = b;
-        response['overlapV'].copy(response['overlapN']).scale(response['overlap']);
+        response.a = a;
+        response.b = b;
+        response.overlapV.copy(response.overlapN).scale(response.overlap);
     }
     return true;
 }
@@ -1227,24 +1285,35 @@ function testPolygonPolygon(a, b, response) {
             //this.shipVerts = new Float32Array([0, 0, 0, 22, 15, 37, 35, 37, 52, 21, 52, 0, 36, 15, 26, 6, 16, 16]);
             //this.shipIndices = new Uint16Array(EL.Graphics.Poly.Triangulate(this.shipVerts));
 
-            this.shipPoly = new EL.Polygon2dMesh([0, 0, 0, 22, 15, 37, 35, 37, 52, 21, 52, 0, 36, 15, 26, 6, 16, 16]);
+            this.shipPoly = new EL.Graphics.Mesh2d(this.graphics);
+            this.shipPoly.load([0, 0, 0, 22, 15, 37, 35, 37, 52, 21, 52, 0, 36, 15, 26, 6, 16, 16]);
+            this.shipPoly.color(0.39 , 0.61, 0.93, 1);
+
+            this.mapModel = new EL.Graphics.Mesh2d(this.graphics);
+            this.mapModel.load([0, 0, 199, 32, 348, 13, 385, 162, 349, 190, 349, 257, 292, 318, 316, 384, 320, 458, 242, 496, 228, 524, 170, 519, 164, 402, 74, 326, 67, 252, 32, 183, 28, 139, -40, 84]);
+            this.mapModel.color(0.7, 0.33, 0.5, 1);
 
             // simple shader
             var fragmentShader = new EL.Graphics.Shader(this.graphics);
             fragmentShader.fromSource([
+                'varying lowp vec4 vColor;',
                 'void main(void) {',
-                '    gl_FragColor = vec4(0.39 , 0.61, 0.93, 1);',
+                '    gl_FragColor = vColor;',
+
                 '}'
             ].join(''), 'FRAGMENT_SHADER');
 
             var vertexShader = new EL.Graphics.Shader(this.graphics);
             vertexShader.fromSource([
                 'attribute vec2 aVertexPosition;',
+                'attribute vec4 aVertexColor;',
                 'uniform mat3 uMMatrix;',
                 'uniform mat3 uVMatrix;',
                 'uniform mat3 uPMatrix;',
+                'varying lowp vec4 vColor;',
                 'void main(void) {',
                 '    gl_Position =  vec4((uPMatrix * uVMatrix * vec3(aVertexPosition, 1)).xy, 1.0, 1.0);',
+                '    vColor = aVertexColor;',
                 '}'
             ].join(''), 'VERTEX_SHADER');
 
@@ -1254,17 +1323,9 @@ function testPolygonPolygon(a, b, response) {
             mainShader.uniform('uVMatrix');
             mainShader.uniform('uPMatrix');
             mainShader.attribute('aVertexPosition');
+            mainShader.attribute('aVertexColor');
 
             this.mainShader = mainShader;
-
-            this.vertexBuffer = gl.createBuffer();
-            this.indexBuffer = gl.createBuffer();
-
-            gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
-            gl.bufferData(gl.ARRAY_BUFFER, this.shipPoly.verticesT, gl.DYNAMIC_DRAW);
-
-            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
-            gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, this.shipPoly.indices, gl.STATIC_DRAW);
 
             this.keyboard.lock(EL.Keys.KEY_LEFT);
             this.keyboard.lock(EL.Keys.KEY_RIGHT);
@@ -1274,8 +1335,8 @@ function testPolygonPolygon(a, b, response) {
             var camera = this.camera = new EL.Camera2d(this.game);
             camera.pos[0] = 0;
             camera.pos[1] = 0;
-            camera.zoom[0] = 2;
-            camera.zoom[1] = 2;
+            camera.zoom[0] = 1;
+            camera.zoom[1] = 1;
             camera.rotation = 0;
             //this.camera.center[0] = 0;
             //this.camera.center[1] = 0;
@@ -1295,6 +1356,14 @@ function testPolygonPolygon(a, b, response) {
             this.ship.scale[1] = 1;
             this.ship.origin[0] = 25;
             this.ship.origin[1] = 18;
+
+            this.map = new EL.Spatial2d();
+            this.map.pos[0] = 0;
+            this.map.pos[1] = 0;
+            this.map.scale[0] = 1;
+            this.map.scale[1] = 1;
+            this.map.origin[0] = this.mapModel.AABB.max[0] - this.mapModel.AABB.min[0];
+            this.map.origin[1] = this.mapModel.AABB.max[1] - this.mapModel.AABB.min[1];
 
             this.ship._prevpos = vec2.create();
             this.ship._prevangle = 0;
@@ -1316,11 +1385,11 @@ function testPolygonPolygon(a, b, response) {
             this.ship._prevangle = this.ship.angle;
 
             if(this.keyboard.key(EL.Keys.KEY_LEFT)) {
-                this.ship.angle -= 0.04;
+                this.ship.angle -= 0.02;
             }
 
             if(this.keyboard.key(EL.Keys.KEY_RIGHT)) {
-                this.ship.angle += 0.04;
+                this.ship.angle += 0.02;
             }
 
             if(this.keyboard.key(EL.Keys.KEY_UP)) {
@@ -1331,7 +1400,7 @@ function testPolygonPolygon(a, b, response) {
 //            this.camera.zoom[0] += 0.02;
 //            this.camera.zoom[1] += 0.01;
 //            this.camera.rotation += 0.03;
-            //vec2.copy(this.camera.pos, this.ship.pos);
+            vec2.copy(this.camera.pos, this.ship.pos);
 
             this.ship.update();
             this.camera.update();
@@ -1363,8 +1432,7 @@ function testPolygonPolygon(a, b, response) {
 
             gl.bindFramebuffer(gl.FRAMEBUFFER, null);
             //gl.clearColor(101 / 255, 156 / 255, 239 / 255, 1);  // cornflower blue
-//            gl.clearColor(0.2, 0.2, 0.2, 1);  // cornflower blue
-            gl.clearColor(0.2, 0.2, 0.2, 1);  // cornflower blue
+            gl.clearColor(0.2, 0.2, 0.2, 1);
             gl.clear(gl.COLOR_BUFFER_BIT);
 
             gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
@@ -1374,16 +1442,39 @@ function testPolygonPolygon(a, b, response) {
             gl.uniformMatrix3fv(this.mainShader.uniforms.uVMatrix, false, this.camera.view);
             gl.uniformMatrix3fv(this.mainShader.uniforms.uMMatrix, false, this.ship.transform);
 
-            gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.shipPoly.vertexBuffer);
             gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.shipPoly.verticesT);
             gl.vertexAttribPointer(this.mainShader.attributes.aVertexPosition, 2, gl.FLOAT, false, 0, 0);
 
-            // indices
-            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.shipPoly.colorBuffer);
+            gl.bufferSubData(gl.ARRAY_BUFFER,0 , this.shipPoly.colors);
+            gl.vertexAttribPointer(this.mainShader.attributes.aVertexColor, 4, gl.FLOAT, false, 0, 0);
 
             // draw
-            //gl.drawElements(gl.TRIANGLES, this.shipPoly.indices.length, gl.UNSIGNED_SHORT, 0);
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.shipPoly.indexBuffer);
+            gl.drawElements(gl.TRIANGLES, this.shipPoly.indices.length, gl.UNSIGNED_SHORT, 0);
+
             gl.drawArrays(gl.LINE_LOOP, 0, this.shipPoly.verticesT.length / 2);
+
+            gl.drawArrays(gl.LINE_LOOP, 0, this.mapModel.verticesT.length / 2);
+
+            gl.uniformMatrix3fv(this.mainShader.uniforms.uPMatrix, false, this.camera.projection);
+            gl.uniformMatrix3fv(this.mainShader.uniforms.uVMatrix, false, this.camera.view);
+            gl.uniformMatrix3fv(this.mainShader.uniforms.uMMatrix, false, this.map.transform);
+
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.mapModel.vertexBuffer);
+            gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.mapModel.verticesT);
+            gl.vertexAttribPointer(this.mainShader.attributes.aVertexPosition, 2, gl.FLOAT, false, 0, 0);
+
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.mapModel.colorBuffer);
+            gl.bufferSubData(gl.ARRAY_BUFFER,0 , this.mapModel.colors);
+            gl.vertexAttribPointer(this.mainShader.attributes.aVertexColor, 4, gl.FLOAT, false, 0, 0);
+
+            // draw
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.mapModel.indexBuffer);
+            gl.drawElements(gl.TRIANGLES, this.mapModel.indices.length, gl.UNSIGNED_SHORT, 0);
+
+            gl.drawArrays(gl.LINE_LOOP, 0, this.mapModel.verticesT.length / 2);
         }
     };
 
