@@ -126,6 +126,19 @@ EL.Input.prototype.boot = function() {
 };
 
 /**
+ *
+ * @param game
+ * @constructor
+ */
+EL.Gamepad = function(game) {
+    this.game = game;
+};
+
+EL.Gamepad.prototype.start = function() {
+
+};
+
+/**
  * Mouse manager class
  * @param game
  * @constructor
@@ -1410,18 +1423,18 @@ function testPolygonPolygon(a, b, response) {
 
             this.ship.angleAcc = -0;
             if(this.keyboard.key(EL.Keys.KEY_LEFT)) {
-                this.ship.angleAcc = -0.0012;
+                this.ship.angleAcc = -0.002;
             }
 
             if(this.keyboard.key(EL.Keys.KEY_RIGHT)) {
-                this.ship.angleAcc = 0.0012;
+                this.ship.angleAcc = 0.002;
             }
 
             this.ship.acc[0] = 0;
             this.ship.acc[1] = 0;
             if(this.keyboard.key(EL.Keys.KEY_UP)) {
-                this.ship.acc[0] = Math.cos(this.ship.angle - Math.PI / 2) * 0.02;
-                this.ship.acc[1] = Math.sin(this.ship.angle - Math.PI / 2) * 0.02;
+                this.ship.acc[0] = Math.cos(this.ship.angle - Math.PI / 2) / 10;
+                this.ship.acc[1] = Math.sin(this.ship.angle - Math.PI / 2) / 10;
             }
 
             vec2.add(this.ship.vel, this.ship.vel, this.ship.acc);
@@ -1439,8 +1452,8 @@ function testPolygonPolygon(a, b, response) {
 //            this.camera.rotation += 0.03;
             vec2.copy(this.camera.pos, this.ship.pos);
 
-            this.camera.zoom[0] = 1 / Math.max(1 + vec2.length(this.ship.vel) * 0.1, 1);
-            this.camera.zoom[1] = 1 / Math.max(1 + vec2.length(this.ship.vel) * 0.1, 1);
+            this.camera.zoom[0] = 1 / Math.max(0.5 + vec2.length(this.ship.vel) * 0.1, 0.5);
+            this.camera.zoom[1] = 1 / Math.max(0.5 + vec2.length(this.ship.vel) * 0.1, 0.5);
             //this.camera.rotation = this.ship.angle;
 
             this.ship.update();
@@ -1459,21 +1472,27 @@ function testPolygonPolygon(a, b, response) {
 
             var gl = this.game.graphics.gl;
 
-            var px = this.ship.pos[0];
-            var py = this.ship.pos[1];
-            var an = this.ship.angle;
-
-            vec2.lerp(this.ship.pos, this.ship._prevpos, this.ship.pos, alpha);
-            this.ship.angle = this.ship.angle * alpha + this.ship._prevangle * (1 - alpha);
-
-            this.ship.update();
-            this.camera.update();
-            this.cam2.update();
-            this.shipPoly.applyTransform(this.ship.transform);
-
-            this.ship.angle = an;
-            this.ship.pos[0] = px;
-            this.ship.pos[1] = py;
+//            var px = this.ship.pos[0];
+//            var py = this.ship.pos[1];
+//            var an = this.ship.angle;
+//
+//            vec2.lerp(this.ship.pos, this.ship._prevpos, this.ship.pos, alpha);
+//            this.ship.angle = this.ship.angle * alpha + this.ship._prevangle * (1 - alpha);
+//            vec2.copy(this.camera.pos, this.ship.pos);
+//
+//            this.ship.update();
+//            this.map.update();
+//            this.map2.update();
+//            this.camera.update();
+//            this.cam2.update();
+//
+//            this.shipPoly.applyTransform(this.ship.transform);
+//            this.mapModel.applyTransform(this.map.transform);
+//            this.map2Model.applyTransform(this.map2.transform);
+//
+//            this.ship.angle = an;
+//            this.ship.pos[0] = px;
+//            this.ship.pos[1] = py;
 
             gl.bindFramebuffer(gl.FRAMEBUFFER, null);
             //gl.clearColor(101 / 255, 156 / 255, 239 / 255, 1);  // cornflower blue
@@ -1497,7 +1516,7 @@ function testPolygonPolygon(a, b, response) {
 
             // draw
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.shipPoly.indexBuffer);
-            gl.drawElements(gl.TRIANGLES, this.shipPoly.indices.length, gl.UNSIGNED_SHORT, 0);
+            //gl.drawElements(gl.TRIANGLES, this.shipPoly.indices.length, gl.UNSIGNED_SHORT, 0);
             gl.drawArrays(gl.LINE_LOOP, 0, this.shipPoly.verticesT.length / 2);
 
 
@@ -1513,7 +1532,7 @@ function testPolygonPolygon(a, b, response) {
 
             // draw
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.mapModel.indexBuffer);
-            gl.drawElements(gl.TRIANGLES, this.mapModel.indices.length, gl.UNSIGNED_SHORT, 0);
+            //gl.drawElements(gl.TRIANGLES, this.mapModel.indices.length, gl.UNSIGNED_SHORT, 0);
             gl.drawArrays(gl.LINE_LOOP, 0, this.mapModel.verticesT.length / 2);
 
 
@@ -1528,7 +1547,7 @@ function testPolygonPolygon(a, b, response) {
 
             // draw
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.map2Model.indexBuffer);
-            gl.drawElements(gl.TRIANGLES, this.map2Model.indices.length, gl.UNSIGNED_SHORT, 0);
+            //gl.drawElements(gl.TRIANGLES, this.map2Model.indices.length, gl.UNSIGNED_SHORT, 0);
             gl.drawArrays(gl.LINE_LOOP, 0, this.map2Model.verticesT.length / 2);
         }
     };
