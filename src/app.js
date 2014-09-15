@@ -5,10 +5,10 @@
  */
 
 /**
- * El Duel Library
+ * Invictus Library
  */
 
-var EL = {};
+var INV = {};
 
 /**
  * RequestAnimationFrame helper service (with fixed time step for physics)
@@ -16,7 +16,7 @@ var EL = {};
  * @constructor
  */
 
-EL.RAF = function(game) {
+INV.RAF = function(game) {
     this.game = game;
     this.timeStep = 1/120;
 
@@ -34,7 +34,7 @@ EL.RAF = function(game) {
     })();
 };
 
-EL.RAF.prototype.start = function() {
+INV.RAF.prototype.start = function() {
     var self = this;
 
     this._onRAF = function() {
@@ -47,7 +47,7 @@ EL.RAF.prototype.start = function() {
     this.update();
 };
 
-EL.RAF.prototype.update = function() {
+INV.RAF.prototype.update = function() {
     if(!this.game.isRunning) {
         return;
     }
@@ -78,12 +78,12 @@ EL.RAF.prototype.update = function() {
  * @param game
  * @constructor
  */
-EL.Graphics = function(game) {
+INV.Graphics = function(game) {
     this.game = game;
     this.canvas = game.canvas;
 };
 
-EL.Graphics.prototype.boot = function() {
+INV.Graphics.prototype.boot = function() {
 
     var gl = this.gl,
         canvas = this.canvas,
@@ -110,16 +110,16 @@ EL.Graphics.prototype.boot = function() {
  * @constructor
  */
 
-EL.Input = function(game) {
+INV.Input = function(game) {
     this.game = game;
     this.keyboard = null;
     this.mouse = null;
 };
 
-EL.Input.prototype.boot = function() {
+INV.Input.prototype.boot = function() {
 
-    this.keyboard = new EL.Keyboard(this.game);
-    this.mouse = new EL.Mouse(this.game);
+    this.keyboard = new INV.Keyboard(this.game);
+    this.mouse = new INV.Mouse(this.game);
 
     this.keyboard.start();
     this.mouse.start();
@@ -130,11 +130,11 @@ EL.Input.prototype.boot = function() {
  * @param game
  * @constructor
  */
-EL.Gamepad = function(game) {
+INV.Gamepad = function(game) {
     this.game = game;
 };
 
-EL.Gamepad.prototype.start = function() {
+INV.Gamepad.prototype.start = function() {
 
 };
 
@@ -143,11 +143,11 @@ EL.Gamepad.prototype.start = function() {
  * @param game
  * @constructor
  */
-EL.Mouse = function(game) {
+INV.Mouse = function(game) {
     this.game = game;
 };
 
-EL.Mouse.prototype.start = function() {
+INV.Mouse.prototype.start = function() {
     var self = this;
 
     this._onMouseDown = function (event) {
@@ -167,15 +167,15 @@ EL.Mouse.prototype.start = function() {
     this.game.canvas.addEventListener('mouseup', this._onMouseUp, true);
 };
 
-EL.Mouse.prototype.processMouseDown = function(event) {
+INV.Mouse.prototype.processMouseDown = function(event) {
 
 };
 
-EL.Mouse.prototype.processMouseMove = function(event) {
+INV.Mouse.prototype.processMouseMove = function(event) {
 
 };
 
-EL.Mouse.prototype.processMouseUp = function(event) {
+INV.Mouse.prototype.processMouseUp = function(event) {
 
 };
 
@@ -184,13 +184,13 @@ EL.Mouse.prototype.processMouseUp = function(event) {
  * @param game
  * @constructor
  */
-EL.Keyboard = function(game) {
+INV.Keyboard = function(game) {
     this.game = game;
     this._keys = [];
     this._locked = [];
 };
 
-EL.Keyboard.prototype.start = function() {
+INV.Keyboard.prototype.start = function() {
     var self = this;
 
     this._onKeyDown = function (event) {
@@ -201,7 +201,7 @@ EL.Keyboard.prototype.start = function() {
         return self.processKeyUp(event);
     };
 
-    var keysCount = EL.Keys.MAX;
+    var keysCount = INV.Keys.MAX;
     while(keysCount--) {
         this._keys.push(false);
         this._locked.push(false);
@@ -211,136 +211,136 @@ EL.Keyboard.prototype.start = function() {
     window.addEventListener('keyup', this._onKeyUp, false);
 };
 
-EL.Keyboard.prototype.key = function(keycode) {
+INV.Keyboard.prototype.key = function(keycode) {
     return this._keys[keycode]
 };
 
-EL.Keyboard.prototype.lock = function(keycode) {
+INV.Keyboard.prototype.lock = function(keycode) {
     this._locked[keycode] = true;
 };
 
-EL.Keyboard.prototype.unlock = function(keycode) {
+INV.Keyboard.prototype.unlock = function(keycode) {
     this._locked[keycode] = false;
 }
 
-EL.Keyboard.prototype.processKeyDown = function(event) {
+INV.Keyboard.prototype.processKeyDown = function(event) {
     this._locked[event.keyCode] && event.preventDefault();
     this._keys[event.keyCode] = true;
 };
 
-EL.Keyboard.prototype.processKeyUp = function(event) {
+INV.Keyboard.prototype.processKeyUp = function(event) {
     this._locked[event.keyCode] && event.preventDefault();
     this._keys[event.keyCode] = false;
 };
 
-EL.Keys = {};
-EL.Keys.MAX = 256;
+INV.Keys = {};
+INV.Keys.MAX = 256;
 
-EL.Keys.KEY_A = 65;
-EL.Keys.KEY_B = 66;
-EL.Keys.KEY_C = 67;
-EL.Keys.KEY_D = 68;
-EL.Keys.KEY_E = 69;
-EL.Keys.KEY_F = 70;
-EL.Keys.KEY_G = 71;
-EL.Keys.KEY_H = 72;
-EL.Keys.KEY_I = 73;
-EL.Keys.KEY_J = 74;
-EL.Keys.KEY_K = 75;
-EL.Keys.KEY_L = 76;
-EL.Keys.KEY_M = 77;
-EL.Keys.KEY_N = 78;
-EL.Keys.KEY_O = 79;
-EL.Keys.KEY_P = 80;
-EL.Keys.KEY_Q = 81;
-EL.Keys.KEY_R = 82;
-EL.Keys.KEY_S = 83;
-EL.Keys.KEY_T = 84;
-EL.Keys.KEY_U = 85;
-EL.Keys.KEY_V = 86;
-EL.Keys.KEY_W = 87;
-EL.Keys.KEY_X = 88;
-EL.Keys.KEY_Y = 89;
-EL.Keys.KEY_Z = 90;
-EL.Keys.KEY_ZERO = 48;
-EL.Keys.KEY_ONE = 49;
-EL.Keys.KEY_TWO = 50;
-EL.Keys.KEY_THREE = 51;
-EL.Keys.KEY_FOUR = 52;
-EL.Keys.KEY_FIVE = 53;
-EL.Keys.KEY_SIX = 54;
-EL.Keys.KEY_SEVEN =55;
-EL.Keys.KEY_EIGHT = 56;
-EL.Keys.KEY_NINE = 57;
-EL.Keys.KEY_NUMPAD_0 = 96;
-EL.Keys.KEY_NUMPAD_1 = 97;
-EL.Keys.KEY_NUMPAD_2 = 98;
-EL.Keys.KEY_NUMPAD_3 = 99;
-EL.Keys.KEY_NUMPAD_4 = 100;
-EL.Keys.KEY_NUMPAD_5 = 101;
-EL.Keys.KEY_NUMPAD_6 = 102;
-EL.Keys.KEY_NUMPAD_7 = 103;
-EL.Keys.KEY_NUMPAD_8 = 104;
-EL.Keys.KEY_NUMPAD_9 = 105;
-EL.Keys.KEY_NUMPAD_MULTIPLY = 106;
-EL.Keys.KEY_NUMPAD_ADD = 107;
-EL.Keys.KEY_NUMPAD_ENTER = 108;
-EL.Keys.KEY_NUMPAD_SUBTRACT = 109;
-EL.Keys.KEY_NUMPAD_DECIMAL = 110;
-EL.Keys.KEY_NUMPAD_DIVIDE = 111;
-EL.Keys.KEY_F1 = 112;
-EL.Keys.KEY_F2 = 113;
-EL.Keys.KEY_F3 = 114;
-EL.Keys.KEY_F4 = 115;
-EL.Keys.KEY_F5 = 116;
-EL.Keys.KEY_F6 = 117;
-EL.Keys.KEY_F7 = 118;
-EL.Keys.KEY_F8 = 119;
-EL.Keys.KEY_F9 = 120;
-EL.Keys.KEY_F10 = 121;
-EL.Keys.KEY_F11 = 122;
-EL.Keys.KEY_F12 = 123;
-EL.Keys.KEY_F13 = 124;
-EL.Keys.KEY_F14 = 125;
-EL.Keys.KEY_F15 = 126;
-EL.Keys.KEY_COLON = 186;
-EL.Keys.KEY_EQUALS = 187;
-EL.Keys.KEY_UNDERSCORE = 189;
-EL.Keys.KEY_QUESTION_MARK = 191;
-EL.Keys.KEY_TILDE = 192;
-EL.Keys.KEY_OPEN_BRACKET = 219;
-EL.Keys.KEY_BACKWARD_SLASH = 220;
-EL.Keys.KEY_CLOSEL_BRACKET = 221;
-EL.Keys.KEY_QUOTES = 222;
-EL.Keys.KEY_BACKSPACE = 8;
-EL.Keys.KEY_TAB = 9;
-EL.Keys.KEY_CLEAR = 12;
-EL.Keys.KEY_ENTER = 13;
-EL.Keys.KEY_SHIFT = 16;
-EL.Keys.KEY_CONTROL = 17;
-EL.Keys.KEY_ALT = 18;
-EL.Keys.KEY_CAPS_LOCK = 20;
-EL.Keys.KEY_ESC = 27;
-EL.Keys.KEY_SPACEBAR = 32;
-EL.Keys.KEY_PAGE_UP = 33;
-EL.Keys.KEY_PAGE_DOWN = 34;
-EL.Keys.KEY_END = 35;
-EL.Keys.KEY_HOME = 36;
-EL.Keys.KEY_LEFT = 37;
-EL.Keys.KEY_UP = 38;
-EL.Keys.KEY_RIGHT = 39;
-EL.Keys.KEY_DOWN = 40;
-EL.Keys.KEY_INSERT = 45;
-EL.Keys.KEY_DELETE = 46;
-EL.Keys.KEY_HELP = 47;
-EL.Keys.KEY_NUM_LOCK = 144;
+INV.Keys.KEY_A = 65;
+INV.Keys.KEY_B = 66;
+INV.Keys.KEY_C = 67;
+INV.Keys.KEY_D = 68;
+INV.Keys.KEY_E = 69;
+INV.Keys.KEY_F = 70;
+INV.Keys.KEY_G = 71;
+INV.Keys.KEY_H = 72;
+INV.Keys.KEY_I = 73;
+INV.Keys.KEY_J = 74;
+INV.Keys.KEY_K = 75;
+INV.Keys.KEY_L = 76;
+INV.Keys.KEY_M = 77;
+INV.Keys.KEY_N = 78;
+INV.Keys.KEY_O = 79;
+INV.Keys.KEY_P = 80;
+INV.Keys.KEY_Q = 81;
+INV.Keys.KEY_R = 82;
+INV.Keys.KEY_S = 83;
+INV.Keys.KEY_T = 84;
+INV.Keys.KEY_U = 85;
+INV.Keys.KEY_V = 86;
+INV.Keys.KEY_W = 87;
+INV.Keys.KEY_X = 88;
+INV.Keys.KEY_Y = 89;
+INV.Keys.KEY_Z = 90;
+INV.Keys.KEY_ZERO = 48;
+INV.Keys.KEY_ONE = 49;
+INV.Keys.KEY_TWO = 50;
+INV.Keys.KEY_THREE = 51;
+INV.Keys.KEY_FOUR = 52;
+INV.Keys.KEY_FIVE = 53;
+INV.Keys.KEY_SIX = 54;
+INV.Keys.KEY_SEVEN =55;
+INV.Keys.KEY_EIGHT = 56;
+INV.Keys.KEY_NINE = 57;
+INV.Keys.KEY_NUMPAD_0 = 96;
+INV.Keys.KEY_NUMPAD_1 = 97;
+INV.Keys.KEY_NUMPAD_2 = 98;
+INV.Keys.KEY_NUMPAD_3 = 99;
+INV.Keys.KEY_NUMPAD_4 = 100;
+INV.Keys.KEY_NUMPAD_5 = 101;
+INV.Keys.KEY_NUMPAD_6 = 102;
+INV.Keys.KEY_NUMPAD_7 = 103;
+INV.Keys.KEY_NUMPAD_8 = 104;
+INV.Keys.KEY_NUMPAD_9 = 105;
+INV.Keys.KEY_NUMPAD_MULTIPLY = 106;
+INV.Keys.KEY_NUMPAD_ADD = 107;
+INV.Keys.KEY_NUMPAD_ENTER = 108;
+INV.Keys.KEY_NUMPAD_SUBTRACT = 109;
+INV.Keys.KEY_NUMPAD_DECIMAL = 110;
+INV.Keys.KEY_NUMPAD_DIVIDE = 111;
+INV.Keys.KEY_F1 = 112;
+INV.Keys.KEY_F2 = 113;
+INV.Keys.KEY_F3 = 114;
+INV.Keys.KEY_F4 = 115;
+INV.Keys.KEY_F5 = 116;
+INV.Keys.KEY_F6 = 117;
+INV.Keys.KEY_F7 = 118;
+INV.Keys.KEY_F8 = 119;
+INV.Keys.KEY_F9 = 120;
+INV.Keys.KEY_F10 = 121;
+INV.Keys.KEY_F11 = 122;
+INV.Keys.KEY_F12 = 123;
+INV.Keys.KEY_F13 = 124;
+INV.Keys.KEY_F14 = 125;
+INV.Keys.KEY_F15 = 126;
+INV.Keys.KEY_COLON = 186;
+INV.Keys.KEY_EQUALS = 187;
+INV.Keys.KEY_UNDERSCORE = 189;
+INV.Keys.KEY_QUESTION_MARK = 191;
+INV.Keys.KEY_TILDE = 192;
+INV.Keys.KEY_OPEN_BRACKET = 219;
+INV.Keys.KEY_BACKWARD_SLASH = 220;
+INV.Keys.KEY_CLOSEL_BRACKET = 221;
+INV.Keys.KEY_QUOTES = 222;
+INV.Keys.KEY_BACKSPACE = 8;
+INV.Keys.KEY_TAB = 9;
+INV.Keys.KEY_CLEAR = 12;
+INV.Keys.KEY_ENTER = 13;
+INV.Keys.KEY_SHIFT = 16;
+INV.Keys.KEY_CONTROL = 17;
+INV.Keys.KEY_ALT = 18;
+INV.Keys.KEY_CAPS_LOCK = 20;
+INV.Keys.KEY_ESC = 27;
+INV.Keys.KEY_SPACEBAR = 32;
+INV.Keys.KEY_PAGE_UP = 33;
+INV.Keys.KEY_PAGE_DOWN = 34;
+INV.Keys.KEY_END = 35;
+INV.Keys.KEY_HOME = 36;
+INV.Keys.KEY_LEFT = 37;
+INV.Keys.KEY_UP = 38;
+INV.Keys.KEY_RIGHT = 39;
+INV.Keys.KEY_DOWN = 40;
+INV.Keys.KEY_INSERT = 45;
+INV.Keys.KEY_DELETE = 46;
+INV.Keys.KEY_HELP = 47;
+INV.Keys.KEY_NUM_LOCK = 144;
 
 /**
  * State manager
  * @param game
  * @constructor
  */
-EL.StateManager = function(game) {
+INV.StateManager = function(game) {
     this.game = game;
     this.states = {};
     this.current = '';
@@ -349,12 +349,12 @@ EL.StateManager = function(game) {
     this._state = null;
 };
 
-EL.StateManager.prototype.add = function(key, state) {
+INV.StateManager.prototype.add = function(key, state) {
     this.states[key] = state;
     this.states[key].game = this.game;
 };
 
-EL.StateManager.prototype.set = function(key) {
+INV.StateManager.prototype.set = function(key) {
     var state = this.states[key],
         methods = ['update', 'render', 'load', 'unload'],
         valid = false;
@@ -374,7 +374,7 @@ EL.StateManager.prototype.set = function(key) {
     this._pending = key;
 };
 
-EL.StateManager.prototype.update = function() {
+INV.StateManager.prototype.update = function() {
 
     if(this._pending) {
 
@@ -390,7 +390,7 @@ EL.StateManager.prototype.update = function() {
     }
 };
 
-EL.StateManager.prototype.render = function(alpha) {
+INV.StateManager.prototype.render = function(alpha) {
 
     if(this._state) {
         this._state.render(alpha);
@@ -404,7 +404,7 @@ EL.StateManager.prototype.render = function(alpha) {
  * @param parentId
  * @constructor
  */
-EL.Game = function(width, height, parentId) {
+INV.Game = function(width, height, parentId) {
     this.isRunning = false;
 
     this.width = width;
@@ -419,7 +419,7 @@ EL.Game = function(width, height, parentId) {
     this.graphics = null;
     this.input = null;
 
-    this.state = new EL.StateManager(this);
+    this.state = new INV.StateManager(this);
 
     var self = this;
     this._onBoot = function() {
@@ -433,15 +433,15 @@ EL.Game = function(width, height, parentId) {
     window.addEventListener('load', this._onBoot, false);
 };
 
-EL.Game.prototype.update = function() {
+INV.Game.prototype.update = function() {
     this.state.update();
 };
 
-EL.Game.prototype.render = function(alpha) {
+INV.Game.prototype.render = function(alpha) {
     this.state.render(alpha);
 };
 
-EL.Game.prototype.boot = function() {
+INV.Game.prototype.boot = function() {
 
     if(this.isRunning) {
         return;
@@ -462,8 +462,8 @@ EL.Game.prototype.boot = function() {
     this.updateCanvas();
 
     // game core services
-    this.graphics = new EL.Graphics(this);
-    this.input = new EL.Input(this);
+    this.graphics = new INV.Graphics(this);
+    this.input = new INV.Input(this);
 
     // booting
     this.graphics.boot();
@@ -471,11 +471,11 @@ EL.Game.prototype.boot = function() {
 
     // ready start
     this.isRunning = true;
-    this.raf = new EL.RAF(this);
+    this.raf = new INV.RAF(this);
     this.raf.start();
 };
 
-EL.Game.prototype.updateCanvas = function() {
+INV.Game.prototype.updateCanvas = function() {
     this.ratio = Math.min(window.innerWidth / this.width, window.innerHeight / this.height);
     this.canvas.style.width = (this.canvas.width * this.ratio) + 'px';
     this.canvas.style.height = (this.canvas.height * this.ratio) + 'px';
@@ -486,7 +486,7 @@ EL.Game.prototype.updateCanvas = function() {
  * @type {{}}
  */
 
-EL.Graphics.Poly = {};
+INV.Graphics.Poly = {};
 
 /**
  * Triangulation (Thanks to IvanK and Mat Groves )
@@ -494,7 +494,7 @@ EL.Graphics.Poly = {};
  * @returns {Array}
  * @constructor
  */
-EL.Graphics.Poly.Triangulate = function(p) {
+INV.Graphics.Poly.Triangulate = function(p) {
     var sign = true;
 
     var n = p.length >> 1;
@@ -516,13 +516,13 @@ EL.Graphics.Poly.Triangulate = function(p) {
         var cx = p[2*i2],  cy = p[2*i2+1];
 
         var earFound = false;
-        if(EL.Graphics.Poly._convex(ax, ay, bx, by, cx, cy, sign)) {
+        if(INV.Graphics.Poly._convex(ax, ay, bx, by, cx, cy, sign)) {
             earFound = true;
             for(var j = 0; j < al; j++) {
                 var vi = avl[j];
                 if(vi === i0 || vi === i1 || vi === i2) continue;
 
-                if(EL.Graphics.Poly._PointInTriangle(p[2*vi], p[2*vi+1], ax, ay, bx, by, cx, cy)) {
+                if(INV.Graphics.Poly._PointInTriangle(p[2*vi], p[2*vi+1], ax, ay, bx, by, cx, cy)) {
                     earFound = false;
                     break;
                 }
@@ -559,7 +559,7 @@ EL.Graphics.Poly.Triangulate = function(p) {
     return tgs;
 };
 
-EL.Graphics.Poly._PointInTriangle = function(px, py, ax, ay, bx, by, cx, cy) {
+INV.Graphics.Poly._PointInTriangle = function(px, py, ax, ay, bx, by, cx, cy) {
     var v0x = cx-ax;
     var v0y = cy-ay;
     var v1x = bx-ax;
@@ -581,7 +581,7 @@ EL.Graphics.Poly._PointInTriangle = function(px, py, ax, ay, bx, by, cx, cy) {
     return (u >= 0) && (v >= 0) && (u + v < 1);
 };
 
-EL.Graphics.Poly._convex = function(ax, ay, bx, by, cx, cy, sign) {
+INV.Graphics.Poly._convex = function(ax, ay, bx, by, cx, cy, sign) {
     return ((ay-by)*(cx-bx) + (bx-ax)*(cy-by) >= 0) === sign;
 };
 
@@ -590,14 +590,14 @@ EL.Graphics.Poly._convex = function(ax, ay, bx, by, cx, cy, sign) {
  * @param graphics
  * @constructor
  */
-EL.Graphics.Shader = function(graphics) {
+INV.Graphics.Shader = function(graphics) {
     this.graphics = graphics;
     this.gl = graphics.gl;
     this.shader = null;
     this.type = null;
 };
 
-EL.Graphics.Shader.prototype.fromSource = function(src, type) {
+INV.Graphics.Shader.prototype.fromSource = function(src, type) {
     var gl = this.gl;
     this.type = gl[type];
 
@@ -619,7 +619,7 @@ EL.Graphics.Shader.prototype.fromSource = function(src, type) {
  * @param graphics
  * @constructor
  */
-EL.Graphics.ShaderProgram = function(graphics) {
+INV.Graphics.ShaderProgram = function(graphics) {
     this.graphics = graphics;
     this.gl = graphics.gl;
     this.program = this.gl.createProgram();
@@ -627,17 +627,17 @@ EL.Graphics.ShaderProgram = function(graphics) {
     this.uniforms = {};
 };
 
-EL.Graphics.ShaderProgram.prototype.attach = function(shader) {
+INV.Graphics.ShaderProgram.prototype.attach = function(shader) {
     this.gl.attachShader(this.program, shader.shader);
     return this;
 };
 
-EL.Graphics.ShaderProgram.prototype.link = function() {
+INV.Graphics.ShaderProgram.prototype.link = function() {
     this.gl.linkProgram(this.program);
     return this;
 };
 
-EL.Graphics.ShaderProgram.prototype.use = function() {
+INV.Graphics.ShaderProgram.prototype.use = function() {
     this.gl.useProgram(this.program);
 
     for(var attr in this.attributes) {
@@ -645,7 +645,7 @@ EL.Graphics.ShaderProgram.prototype.use = function() {
     }
 };
 
-EL.Graphics.ShaderProgram.prototype.unuse = function() {
+INV.Graphics.ShaderProgram.prototype.unuse = function() {
     for(var attr in this.attributes) {
         this.gl.disableVertexAttribArray(this.attributes[attr]);
     }
@@ -653,11 +653,11 @@ EL.Graphics.ShaderProgram.prototype.unuse = function() {
     this.gl.useProgram(null);
 };
 
-EL.Graphics.ShaderProgram.prototype.uniform = function(name) {
+INV.Graphics.ShaderProgram.prototype.uniform = function(name) {
     this.uniforms[name] = this.gl.getUniformLocation(this.program, name);
 };
 
-EL.Graphics.ShaderProgram.prototype.attribute = function(name) {
+INV.Graphics.ShaderProgram.prototype.attribute = function(name) {
     this.attributes[name] = this.gl.getAttribLocation(this.program, name);
 };
 
@@ -667,7 +667,7 @@ EL.Graphics.ShaderProgram.prototype.attribute = function(name) {
  * @param graphics
  * @constructor
  */
-EL.Graphics.RenderTarget = function(graphics) {
+INV.Graphics.RenderTarget = function(graphics) {
     this.graphics = graphics;
     this.gl = graphics.gl;
 };
@@ -988,7 +988,7 @@ mat3.scale = function(out, a, v) {
  * Spatial2d is 2d space transformation component
  * @constructor
  */
-EL.Spatial2d = function() {
+INV.Spatial2d = function() {
     this.pos = vec2.create();
     this.scale = vec2.create(1, 1);
     this.angle = 0;
@@ -998,7 +998,7 @@ EL.Spatial2d = function() {
     this.transform = mat3.create();
 };
 
-EL.Spatial2d.prototype.update = function() {
+INV.Spatial2d.prototype.update = function() {
     var t = this.transform;
 
     vec2.negate(this._norigin, this.origin);
@@ -1014,7 +1014,7 @@ EL.Spatial2d.prototype.update = function() {
  * Camera2d class
  * @constructor
  */
-EL.Camera2d = function(game) {
+INV.Camera2d = function(game) {
     this.game = game;
     this.pos = vec2.create();
     this._npos = vec2.create();
@@ -1034,7 +1034,7 @@ EL.Camera2d = function(game) {
     this.projection[7] = 1;
 };
 
-EL.Camera2d.prototype.update = function() {
+INV.Camera2d.prototype.update = function() {
     var v = this.view,
         c = this.center;
 
@@ -1051,12 +1051,12 @@ EL.Camera2d.prototype.update = function() {
  * AABB Axis Aligned Bounding Box
  * @constructor
  */
-EL.AABB = function() {
+INV.AABB = function() {
     this.min = vec2.create();
     this.max = vec2.create();
 };
 
-EL.AABB.vsAABB = function(a, b) {
+INV.AABB.vsAABB = function(a, b) {
     // Exit with no intersection if found separated along an axis
     if(a.max[0] < b.min[0] || a.min[0] > b.max[0]) return false;
     if(a.max[1] < b.min[1] || a.min[1] > b.max[1]) return false;
@@ -1069,7 +1069,7 @@ EL.AABB.vsAABB = function(a, b) {
  * Mesh2d stores 2d mesh polygon data information
  * @constructor
  */
-EL.Graphics.Mesh2d = function(graphics) {
+INV.Graphics.Mesh2d = function(graphics) {
     this.graphics = graphics;
     this.gl = graphics.gl;
 
@@ -1082,7 +1082,7 @@ EL.Graphics.Mesh2d = function(graphics) {
     this.vertexBuffer = this.gl.createBuffer();
     this.indexBuffer = this.gl.createBuffer();
 
-    this.AABB = new EL.AABB();
+    this.AABB = new INV.AABB();
 
     var self = this;
     this._transformPoint = function(vec, transform) {
@@ -1094,10 +1094,10 @@ EL.Graphics.Mesh2d = function(graphics) {
     };
 };
 
-EL.Graphics.Mesh2d.prototype.load = function(data) {
+INV.Graphics.Mesh2d.prototype.load = function(data) {
     this.vertices = new Float32Array(data);
     this.verticesT = new Float32Array(data);
-    this.indices = new Uint16Array(EL.Graphics.Poly.Triangulate(this.vertices));
+    this.indices = new Uint16Array(INV.Graphics.Poly.Triangulate(this.vertices));
     this.colors = new Float32Array(data.length * 2);
 
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.colorBuffer);
@@ -1112,7 +1112,7 @@ EL.Graphics.Mesh2d.prototype.load = function(data) {
     this.applyTransform(mat3.ident);
 };
 
-EL.Graphics.Mesh2d.prototype.color = function(r, g, b, a) {
+INV.Graphics.Mesh2d.prototype.color = function(r, g, b, a) {
 
     if(this.colors == null) {
         return;
@@ -1126,7 +1126,7 @@ EL.Graphics.Mesh2d.prototype.color = function(r, g, b, a) {
     }
 };
 
-EL.Graphics.Mesh2d.prototype.applyTransform = function(transform) {
+INV.Graphics.Mesh2d.prototype.applyTransform = function(transform) {
     vec2.forEach(this.verticesT, this.vertices, 0, 0, 0, this._transformPoint, transform);
 };
 
@@ -1134,7 +1134,7 @@ EL.Graphics.Mesh2d.prototype.applyTransform = function(transform) {
  * Body2d physics class
  * @constructor
  */
-EL.Body2d = function() {
+INV.Body2d = function() {
     this.pos = vec2.create();
     this.acc = vec2.create();
     this.vec = vec2.create();
@@ -1144,18 +1144,18 @@ EL.Body2d = function() {
     this.polygons = [];
 };
 
-EL.Body2d.prototype.addPolygon = function(polygon) {
+INV.Body2d.prototype.addPolygon = function(polygon) {
     this.polygons.push(polygon);
 };
 
-EL.Body2d.prototype.update = function(transform) {
+INV.Body2d.prototype.update = function(transform) {
     var l = this.polygons.length;
     while(l--) {
         this.polygons[l].applyTransform(transform);
     }
 };
 
-EL.Contact2d = function() {
+INV.Contact2d = function() {
     this.a = null;
     this.b = null;
     this.overlapN = vec2.create();
@@ -1163,28 +1163,28 @@ EL.Contact2d = function() {
     this.clear();
 };
 
-EL.Contact2d.prototype.clear = function() {
+INV.Contact2d.prototype.clear = function() {
     this.aInB = true;
     this.bInA = true;
     this.overlap = Number.MAX_VALUE;
 };
 
-EL.SAT = {};
-EL.SAT._tvec = [
+INV.SAT = {};
+INV.SAT._tvec = [
     vec2.create(),
     vec2.create(),
     vec2.create(),
     vec2.create()
 ];
 
-EL.SAT.flattenPointsOn = function(points, normal, result) {
+INV.SAT.flattenPointsOn = function(points, normal, result) {
     var min = Number.MAX_VALUE;
     var max = -Number.MAX_VALUE;
     var len = points.length / 2;
 
     for (var i = 0; i < len; i+= 2) {
         // The magnitude of the projection of the point onto the normal
-        var dot = vec2.dot(vec2.set(EL.SAT._tvec[0], points[i], points[i + 1]), normal);
+        var dot = vec2.dot(vec2.set(INV.SAT._tvec[0], points[i], points[i + 1]), normal);
         if (dot < min) { min = dot; }
         if (dot > max) { max = dot; }
     }
@@ -1193,12 +1193,12 @@ EL.SAT.flattenPointsOn = function(points, normal, result) {
     result[1] = max;
 };
 
-EL.SAT.isSeparatingAxis = function(aPos, bPos, aPoints, bPoints, axis, response) {
-    var rangeA = EL.SAT._tvec[1];
-    var rangeB = EL.SAT._tvec[2];
+INV.SAT.isSeparatingAxis = function(aPos, bPos, aPoints, bPoints, axis, response) {
+    var rangeA = INV.SAT._tvec[1];
+    var rangeB = INV.SAT._tvec[2];
     // The magnitude of the offset between the two polygons
 
-    var offsetV = vec2.subtract(EL.SAT._tvec[3], bPos, aPos);
+    var offsetV = vec2.subtract(INV.SAT._tvec[3], bPos, aPos);
     var projectedOffset = vec2.dot(offsetV, axis);
     // Project the polygons onto the axis.
     flattenPointsOn(aPoints, axis, rangeA);
@@ -1289,7 +1289,7 @@ function testPolygonPolygon(a, b, response) {
 (function() {
     'use strict';
 
-    var game = new EL.Game(1600, 700, 'c');
+    var game = new INV.Game(1600, 700, 'c');
 
     var main = {
 
@@ -1302,22 +1302,22 @@ function testPolygonPolygon(a, b, response) {
 
             // objects
             //this.shipVerts = new Float32Array([0, 0, 0, 22, 15, 37, 35, 37, 52, 21, 52, 0, 36, 15, 26, 6, 16, 16]);
-            //this.shipIndices = new Uint16Array(EL.Graphics.Poly.Triangulate(this.shipVerts));
+            //this.shipIndices = new Uint16Array(INV.Graphics.Poly.Triangulate(this.shipVerts));
 
-            this.shipPoly = new EL.Graphics.Mesh2d(this.graphics);
+            this.shipPoly = new INV.Graphics.Mesh2d(this.graphics);
             this.shipPoly.load([0, 0, 0, 22, 15, 37, 35, 37, 52, 21, 52, 0, 36, 15, 26, 6, 16, 16]);
             this.shipPoly.color(0.39 , 0.61, 0.93, 1);
 
-            this.mapModel = new EL.Graphics.Mesh2d(this.graphics);
+            this.mapModel = new INV.Graphics.Mesh2d(this.graphics);
             this.mapModel.load([0, 0, 199, 32, 348, 13, 385, 162, 349, 190, 349, 257, 292, 318, 316, 384, 320, 458, 242, 496, 228, 524, 170, 519, 164, 402, 74, 326, 67, 252, 32, 183, 28, 139, -40, 84]);
             this.mapModel.color(0.7, 0.33, 0.5, 1);
 
-            this.map2Model = new EL.Graphics.Mesh2d(this.graphics);
+            this.map2Model = new INV.Graphics.Mesh2d(this.graphics);
             this.map2Model.load([0, 0, -15, 168, 48, 348, 171, 410, 312, 235, 202, 74]);
             this.map2Model.color(0.6, 0.6, 0.3, 1);
 
             // simple shader
-            var fragmentShader = new EL.Graphics.Shader(this.graphics);
+            var fragmentShader = new INV.Graphics.Shader(this.graphics);
             fragmentShader.fromSource([
                 'varying lowp vec4 vColor;',
                 'void main(void) {',
@@ -1326,7 +1326,7 @@ function testPolygonPolygon(a, b, response) {
                 '}'
             ].join(''), 'FRAGMENT_SHADER');
 
-            var vertexShader = new EL.Graphics.Shader(this.graphics);
+            var vertexShader = new INV.Graphics.Shader(this.graphics);
             vertexShader.fromSource([
                 'attribute vec2 aVertexPosition;',
                 'attribute vec4 aVertexColor;',
@@ -1340,7 +1340,7 @@ function testPolygonPolygon(a, b, response) {
                 '}'
             ].join(''), 'VERTEX_SHADER');
 
-            var mainShader = new EL.Graphics.ShaderProgram(this.graphics);
+            var mainShader = new INV.Graphics.ShaderProgram(this.graphics);
             mainShader.attach(fragmentShader).attach(vertexShader).link();
             mainShader.uniform('uMMatrix');
             mainShader.uniform('uVMatrix');
@@ -1350,12 +1350,12 @@ function testPolygonPolygon(a, b, response) {
 
             this.mainShader = mainShader;
 
-            this.keyboard.lock(EL.Keys.KEY_LEFT);
-            this.keyboard.lock(EL.Keys.KEY_RIGHT);
-            this.keyboard.lock(EL.Keys.KEY_UP);
-            this.keyboard.lock(EL.Keys.KEY_DOWN);
+            this.keyboard.lock(INV.Keys.KEY_LEFT);
+            this.keyboard.lock(INV.Keys.KEY_RIGHT);
+            this.keyboard.lock(INV.Keys.KEY_UP);
+            this.keyboard.lock(INV.Keys.KEY_DOWN);
 
-            var camera = this.camera = new EL.Camera2d(this.game);
+            var camera = this.camera = new INV.Camera2d(this.game);
             camera.pos[0] = 0;
             camera.pos[1] = 0;
             camera.zoom[0] = 4;
@@ -1364,7 +1364,7 @@ function testPolygonPolygon(a, b, response) {
             //this.camera.center[0] = 0;
             //this.camera.center[1] = 0;
 
-            this.cam2 = new EL.Spatial2d();
+            this.cam2 = new INV.Spatial2d();
             this.cam2.pos[0] = 0;
             this.cam2.pos[1] = 0;
             this.cam2.scale[0] = 1;
@@ -1372,7 +1372,7 @@ function testPolygonPolygon(a, b, response) {
             this.cam2.angle = 0;
 
             // entities
-            this.ship = new EL.Spatial2d();
+            this.ship = new INV.Spatial2d();
             this.ship.pos[0] = 0;
             this.ship.pos[1] = 0;
             this.ship.scale[0] = 1;
@@ -1386,7 +1386,7 @@ function testPolygonPolygon(a, b, response) {
             this.ship.angleVel = 0;
             this.ship.angleVelMax = 0;
 
-            this.map = new EL.Spatial2d();
+            this.map = new INV.Spatial2d();
             this.map.pos[0] = 400;
             this.map.pos[1] = 100;
             this.map.scale[0] = 1;
@@ -1394,7 +1394,7 @@ function testPolygonPolygon(a, b, response) {
             this.map.origin[0] = this.mapModel.AABB.max[0] - this.mapModel.AABB.min[0];
             this.map.origin[1] = this.mapModel.AABB.max[1] - this.mapModel.AABB.min[1];
 
-            this.map2 = new EL.Spatial2d();
+            this.map2 = new INV.Spatial2d();
             this.map2.pos[0] = -200;
             this.map2.pos[1] = 0;
             this.map2.scale[0] = 1;
@@ -1422,17 +1422,17 @@ function testPolygonPolygon(a, b, response) {
             this.ship._prevangle = this.ship.angle;
 
             this.ship.angleAcc = -0;
-            if(this.keyboard.key(EL.Keys.KEY_LEFT)) {
+            if(this.keyboard.key(INV.Keys.KEY_LEFT)) {
                 this.ship.angleAcc = -0.002;
             }
 
-            if(this.keyboard.key(EL.Keys.KEY_RIGHT)) {
+            if(this.keyboard.key(INV.Keys.KEY_RIGHT)) {
                 this.ship.angleAcc = 0.002;
             }
 
             this.ship.acc[0] = 0;
             this.ship.acc[1] = 0;
-            if(this.keyboard.key(EL.Keys.KEY_UP)) {
+            if(this.keyboard.key(INV.Keys.KEY_UP)) {
                 this.ship.acc[0] = Math.cos(this.ship.angle - Math.PI / 2) / 10;
                 this.ship.acc[1] = Math.sin(this.ship.angle - Math.PI / 2) / 10;
             }
