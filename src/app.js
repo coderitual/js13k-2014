@@ -114,15 +114,23 @@ EL.Input = function(game) {
     this.game = game;
     this.keyboard = null;
     this.mouse = null;
+    this.gamepad = null;
 };
 
 EL.Input.prototype.boot = function() {
 
     this.keyboard = new EL.Keyboard(this.game);
     this.mouse = new EL.Mouse(this.game);
+    this.gamepad = new EL.Gamepad(this.game);
 
     this.keyboard.start();
     this.mouse.start();
+    this.gamepad.start();
+};
+
+
+EL.Input.prototype.update = function() {
+    this.gamepad.update();
 };
 
 /**
@@ -132,11 +140,54 @@ EL.Input.prototype.boot = function() {
  */
 EL.Gamepad = function(game) {
     this.game = game;
+    this.deadZone = 0.15;
+    this._gamepads = null;
+};
+
+EL.Gamepad.prototype.connected = function(pad) {
+    return this._gamepads[pad] && this._gamepads[pad].connected;
+};
+
+EL.Gamepad.prototype.button = function(pad, buttonId) {
+    if(!this.connected(pad)) return 0;
+    return this._gamepads[pad].buttons[buttonId].value;
+};
+
+EL.Gamepad.prototype.axis = function(pad, axisId) {
+    if(!this.connected(pad)) return 0;
+    var value = this._gamepads[pad].axes[axisId];
+    return Math.abs(value) > this.deadZone ? value : 0;
 };
 
 EL.Gamepad.prototype.start = function() {
-
+    this._gamepads = navigator.getGamepads();
 };
+
+EL.Gamepad.prototype.update = function() {
+    this._gamepads = navigator.getGamepads();
+};
+
+EL.Gamepad.A = 0;
+EL.Gamepad.B = 1;
+EL.Gamepad.X = 2;
+EL.Gamepad.Y = 3;
+EL.Gamepad.LEFT_BUMPER = 4;
+EL.Gamepad.RIGHT_BUMPER = 5;
+EL.Gamepad.LEFT_TRIGGER = 6;
+EL.Gamepad.RIGHT_TRIGGER = 7;
+EL.Gamepad.BACK = 8;
+EL.Gamepad.START = 9;
+EL.Gamepad.STICK_LEFT_BUTTON = 10;
+EL.Gamepad.STICK_RIGHT_BUTTON = 11;
+EL.Gamepad.DPAD_UP = 12;
+EL.Gamepad.DPAD_DOWN = 13;
+EL.Gamepad.DPAD_LEFT = 14;
+EL.Gamepad.DPAD_RIGHT = 15;
+
+EL.Gamepad.LEFT_AXIS_X = 0;
+EL.Gamepad.LEFT_AXIS_Y = 1;
+EL.Gamepad.RIGHT_AXIS_X = 2;
+EL.Gamepad.RIGHT_AXIS_Y = 3;
 
 /**
  * Mouse manager class
@@ -434,6 +485,7 @@ EL.Game = function(width, height, parentId) {
 };
 
 EL.Game.prototype.update = function() {
+    this.input.update();
     this.state.update();
 };
 
@@ -1297,7 +1349,9 @@ function testPolygonPolygon(a, b, response) {
 
             // shortcuts
             this.keyboard = this.game.input.keyboard;
+            this.gamepad = this.game.input.gamepad;
             this.graphics = this.game.graphics;
+
             var gl = this.graphics.gl;
 
             // objects
@@ -1422,6 +1476,11 @@ function testPolygonPolygon(a, b, response) {
             this.ship._prevangle = this.ship.angle;
 
             this.ship.angleAcc = -0;
+
+            //gamepad
+            var pad = 1;
+            this.ship.angleAcc = this.gamepad.axis(pad, EL.Gamepad.LEFT_AXIS_X) * 0.002;
+
             if(this.keyboard.key(EL.Keys.KEY_LEFT)) {
                 this.ship.angleAcc = -0.002;
             }
@@ -1432,6 +1491,10 @@ function testPolygonPolygon(a, b, response) {
 
             this.ship.acc[0] = 0;
             this.ship.acc[1] = 0;
+            var padAcc = this.gamepad.button(pad, EL.Gamepad.RIGHT_TRIGGER) - this.gamepad.button(pad, EL.Gamepad.LEFT_TRIGGER);
+            this.ship.acc[0] = Math.cos(this.ship.angle - Math.PI / 2) * padAcc * 0.1;
+            this.ship.acc[1] = Math.sin(this.ship.angle - Math.PI / 2) * padAcc * 0.1;
+
             if(this.keyboard.key(EL.Keys.KEY_UP)) {
                 this.ship.acc[0] = Math.cos(this.ship.angle - Math.PI / 2) / 10;
                 this.ship.acc[1] = Math.sin(this.ship.angle - Math.PI / 2) / 10;
