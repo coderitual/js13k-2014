@@ -1579,7 +1579,7 @@ function testPolygonPolygon(a, b, response) {
 
             // draw
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.shipPoly.indexBuffer);
-            //gl.drawElements(gl.TRIANGLES, this.shipPoly.indices.length, gl.UNSIGNED_SHORT, 0);
+            gl.drawElements(gl.TRIANGLES, this.shipPoly.indices.length, gl.UNSIGNED_SHORT, 0);
             gl.drawArrays(gl.LINE_LOOP, 0, this.shipPoly.verticesT.length / 2);
 
 
@@ -1595,7 +1595,7 @@ function testPolygonPolygon(a, b, response) {
 
             // draw
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.mapModel.indexBuffer);
-            //gl.drawElements(gl.TRIANGLES, this.mapModel.indices.length, gl.UNSIGNED_SHORT, 0);
+            gl.drawElements(gl.TRIANGLES, this.mapModel.indices.length, gl.UNSIGNED_SHORT, 0);
             gl.drawArrays(gl.LINE_LOOP, 0, this.mapModel.verticesT.length / 2);
 
 
@@ -1610,7 +1610,7 @@ function testPolygonPolygon(a, b, response) {
 
             // draw
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.map2Model.indexBuffer);
-            //gl.drawElements(gl.TRIANGLES, this.map2Model.indices.length, gl.UNSIGNED_SHORT, 0);
+            gl.drawElements(gl.TRIANGLES, this.map2Model.indices.length, gl.UNSIGNED_SHORT, 0);
             gl.drawArrays(gl.LINE_LOOP, 0, this.map2Model.verticesT.length / 2);
         }
     };
