@@ -1,4 +1,4 @@
 elduel-js13k
 ============
 
-El duel is entry for 2014 js13games
+El duel is an entry for 2014 js13kgames
